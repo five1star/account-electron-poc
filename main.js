@@ -42,8 +42,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // 데이터베이스 초기화
-  initDatabase();
+  try {
+    // 데이터베이스 초기화 (에러 발생 시에도 앱은 계속 실행)
+    initDatabase();
+  } catch (error) {
+    console.error("Database initialization failed, but continuing:", error);
+    // 데이터베이스 초기화 실패해도 앱은 계속 실행
+  }
   
   // IPC 핸들러 등록
   registerIpcHandlers();

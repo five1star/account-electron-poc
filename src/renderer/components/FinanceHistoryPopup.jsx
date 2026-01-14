@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 
+// 한글 폰트 추가를 위한 유틸리티
+// 실제로는 Noto Sans KR 폰트를 base64로 변환하여 추가해야 합니다.
+// 여기서는 간단한 방법으로 처리합니다.
+
 function FinanceHistoryPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("수입"); // "수입" 또는 "지출"
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
@@ -39,30 +43,142 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
     setEditingRecord(record);
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation(); // 테이블 행 클릭 이벤트 방지
-    if (!confirm("정말 삭제하시겠습니까?")) return;
-
-    try {
-      let result;
-      if (activeTab === "수입") {
-        result = await window.electronAPI.finance.deleteIncome(id);
-      } else {
-        result = await window.electronAPI.finance.deleteExpense(id);
-      }
-      if (result.success) {
-        loadRecords();
-      } else {
-        alert("삭제에 실패했습니다.");
-      }
-    } catch (error) {
-      console.error("삭제 실패:", error);
-      alert("삭제에 실패했습니다.");
-    }
-  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("ko-KR").format(amount);
+  };
+
+  const handleSavePDF = async () => {
+    if (records.length === 0) {
+      alert("저장할 데이터가 없습니다.");
+      return;
+    }
+
+    try {
+      // 날짜 범위 문자열 생성
+      const dateRange = startDate === endDate 
+        ? formatDate(startDate)
+        : `${formatDate(startDate)} ~ ${formatDate(endDate)}`;
+
+      // 기본 파일명 생성
+      const defaultFileName = `${activeTab}_${dateRange.replace(/[~ ]/g, "_")}.pdf`;
+
+      // HTML 테이블 생성
+      const tableRows = records.map((record) => {
+        const cells = [
+          `<td>${formatDate(record.date)}</td>`,
+          `<td>${record.main_category}</td>`,
+          `<td>${record.sub_category || "-"}</td>`,
+        ];
+        if (activeTab === "수입") {
+          cells.push(`<td>${record.name1 || "-"}</td>`, `<td>${record.name2 || "-"}</td>`);
+        }
+        cells.push(`<td>${formatCurrency(record.amount)}원</td>`);
+        return `<tr>${cells.join("")}</tr>`;
+      }).join("");
+
+      const tableHeaders = [
+        "<th>날짜</th>",
+        "<th>대분류</th>",
+        "<th>하위 항목</th>",
+      ];
+      if (activeTab === "수입") {
+        tableHeaders.push("<th>이름1</th>", "<th>이름2</th>");
+      }
+      tableHeaders.push("<th>금액</th>");
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+    body {
+      font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
+      font-size: 10pt;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 18pt;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th {
+      background-color: #667eea;
+      color: white;
+      padding: 8px;
+      text-align: center;
+      border: 1px solid #ddd;
+      font-weight: bold;
+    }
+    td {
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>${dateRange} ${activeTab} 내용</h1>
+  <table>
+    <thead>
+      <tr>${tableHeaders.join("")}</tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+      // Electron의 printToPDF를 사용하여 PDF 생성
+      const pdfResult = await window.electronAPI.generatePDF(htmlContent, {
+        pageSize: "A4",
+        printBackground: true,
+        margins: {
+          marginType: "custom",
+          top: 0.4,
+          bottom: 0.4,
+          left: 0.4,
+          right: 0.4,
+        },
+      });
+
+      if (!pdfResult.success) {
+        throw new Error(pdfResult.error || "PDF 생성 실패");
+      }
+
+      // PDF 데이터를 배열로 변환
+      const pdfBuffer = pdfResult.data;
+      const uint8Array = new Uint8Array(pdfBuffer);
+      const fileData = Array.from(uint8Array);
+
+      // 파일 저장 다이얼로그를 통해 저장
+      const saveResult = await window.electronAPI.saveFile(defaultFileName, [
+        { name: "PDF Files", extensions: ["pdf"] },
+        { name: "All Files", extensions: ["*"] },
+      ], fileData);
+
+      if (!saveResult.canceled) {
+        alert("PDF가 성공적으로 저장되었습니다.");
+      }
+    } catch (error) {
+      console.error("PDF 저장 실패:", error);
+      alert("PDF 저장에 실패했습니다: " + error.message);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -96,9 +212,16 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
               </button>
             </div>
           </div>
-          <button className="close-button" onClick={onClose}>
-            ×
-          </button>
+          <div className="header-right">
+            {records.length > 0 && (
+              <button className="pdf-save-button" onClick={handleSavePDF}>
+                PDF 저장
+              </button>
+            )}
+            <button className="close-button" onClick={onClose}>
+              ×
+            </button>
+          </div>
         </div>
 
         <div className="filter-section">
@@ -110,12 +233,10 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && !e.key.startsWith('Arrow')) {
+                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
+                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
                     e.preventDefault();
                   }
-                }}
-                onInput={(e) => {
-                  e.target.value = startDate;
                 }}
                 className="date-input-styled"
               />
@@ -127,12 +248,10 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && !e.key.startsWith('Arrow')) {
+                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
+                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
                     e.preventDefault();
                   }
-                }}
-                onInput={(e) => {
-                  e.target.value = endDate;
                 }}
                 className="date-input-styled"
               />
@@ -159,12 +278,11 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
                   {activeTab === "수입" && <th>이름2</th>}
                   <th>금액</th>
                   <th>메모</th>
-                  <th>작업</th>
                 </tr>
               </thead>
               <tbody>
                 {records.map((record) => (
-                  <tr key={record.id} onClick={() => handleEdit(record)}>
+                  <tr key={record.id} onDoubleClick={() => handleEdit(record)}>
                     <td>{formatDate(record.date)}</td>
                     <td>{record.main_category}</td>
                     <td>{record.sub_category}</td>
@@ -172,14 +290,6 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
                     {activeTab === "수입" && <td>{record.name2 || "-"}</td>}
                     <td>{formatCurrency(record.amount)}원</td>
                     <td>{record.memo || "-"}</td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="delete-button"
-                        onClick={(e) => handleDelete(record.id, e)}
-                      >
-                        삭제
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -316,12 +426,10 @@ function FinanceEditPopup({ record, type, onClose }) {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && !e.key.startsWith('Arrow')) {
+                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
+                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
                     e.preventDefault();
                   }
-                }}
-                onInput={(e) => {
-                  e.target.value = date;
                 }}
                 className="date-input-styled"
                 required

@@ -182,6 +182,42 @@ function FinanceInputPopup({ isOpen, onClose }) {
     return new Intl.NumberFormat("ko-KR").format(amount);
   };
 
+  // 총계 계산 (수입만)
+  const calculateSummary = () => {
+    if (activeTab !== "수입") return null;
+
+    const total = records.reduce((sum, record) => sum + record.amount, 0);
+    
+    // 하위 항목별 합계 (모든 항목 포함, sub_category가 없는 경우도 처리)
+    const subCategoryTotals = {};
+    records.forEach(record => {
+      // sub_category가 null이거나 빈 문자열인 경우 처리
+      const subCategory = record.sub_category || "(미분류)";
+      const key = `${record.main_category} - ${subCategory}`;
+      
+      if (!subCategoryTotals[key]) {
+        subCategoryTotals[key] = {
+          main_category: record.main_category,
+          sub_category: subCategory,
+          amount: 0
+        };
+      }
+      subCategoryTotals[key].amount += record.amount;
+    });
+
+    // 모든 항목을 배열로 변환 (입력이 있는 것만, 금액 순으로 정렬)
+    const subCategoryList = Object.values(subCategoryTotals)
+      .filter(item => item.amount > 0)
+      .sort((a, b) => b.amount - a.amount); // 금액이 큰 순서대로 정렬
+
+    return {
+      total,
+      subCategoryList
+    };
+  };
+
+  const summary = calculateSummary();
+
   if (!isOpen) return null;
 
   return (
@@ -226,14 +262,10 @@ function FinanceInputPopup({ isOpen, onClose }) {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   onKeyDown={(e) => {
-                    // 키보드 입력 차단 (화살표 키와 Tab은 허용)
-                    if (e.key !== 'Tab' && !e.key.startsWith('Arrow')) {
+                    // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
+                    if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
                       e.preventDefault();
                     }
-                  }}
-                  onInput={(e) => {
-                    // 직접 입력 차단
-                    e.target.value = date;
                   }}
                   className="date-input-styled"
                   required
@@ -390,6 +422,28 @@ function FinanceInputPopup({ isOpen, onClose }) {
           )}
         </div>
 
+        {activeTab === "수입" && summary && (
+          <div className="summary-section">
+            <div className="summary-item">
+              <span className="summary-label">해당 날짜 총 수입 금액:</span>
+              <span className="summary-value">{formatCurrency(summary.total)}원</span>
+            </div>
+            {summary.subCategoryList.length > 0 && (
+              <div className="summary-subcategories">
+                <span className="summary-label">항목별 수입: </span>
+                <span className="summary-subcategory-list">
+                  {summary.subCategoryList.map((item, index) => (
+                    <span key={index} className="summary-subcategory-item-inline">
+                      {item.main_category} - {item.sub_category}: {formatCurrency(item.amount)}원
+                      {index < summary.subCategoryList.length - 1 && " / "}
+                    </span>
+                  ))}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {editingRecord && (
           <FinanceEditPopup
             record={editingRecord}
@@ -527,14 +581,10 @@ function FinanceEditPopup({ record, type, onClose }) {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 onKeyDown={(e) => {
-                  // 키보드 입력 차단 (화살표 키와 Tab은 허용)
-                  if (e.key !== 'Tab' && !e.key.startsWith('Arrow')) {
+                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
+                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
                     e.preventDefault();
                   }
-                }}
-                onInput={(e) => {
-                  // 직접 입력 차단
-                  e.target.value = date;
                 }}
                 className="date-input-styled"
                 required

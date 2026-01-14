@@ -4,7 +4,7 @@
   "description": "재정 입력 & 관리 프로그램",
   "main": "main.js",
   "scripts": {
-    "postinstall": "electron-rebuild",
+    "postinstall": "electron-builder install-app-deps",
     "start": "electron .",
     "build:start": "npm run build && npm start",
     "dev": "npm run kill-port && ELECTRON_DEV=true concurrently -k -s first -n \"VITE,ELECTRON\" -c \"cyan,magenta\" \"npm run dev:react\" \"node scripts/wait-for-vite.js && ELECTRON_DEV=true electron .\"",
@@ -69,6 +69,8 @@
   },
   "dependencies": {
     "better-sqlite3": "^9.2.2",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

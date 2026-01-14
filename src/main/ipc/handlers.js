@@ -178,6 +178,79 @@ function registerIpcHandlers() {
       return { success: false, error: error.message };
     }
   });
+
+  // 파일 저장 다이얼로그 및 파일 저장
+  ipcMain.handle("dialog:saveFile", async (event, defaultPath, filters, fileData) => {
+    const { dialog } = require("electron");
+    const fs = require("fs");
+    
+    const result = await dialog.showSaveDialog({
+      defaultPath: defaultPath,
+      filters: filters || [
+        { name: "PDF Files", extensions: ["pdf"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+    });
+    
+    if (!result.canceled && fileData) {
+      // 파일 데이터를 Buffer로 변환하여 저장
+      const buffer = Buffer.from(fileData);
+      fs.writeFileSync(result.filePath, buffer);
+    }
+    
+    return result;
+  });
+
+  // PDF 생성 (HTML을 PDF로 변환)
+  ipcMain.handle("pdf:generate", async (event, htmlContent, options) => {
+    const { dialog, BrowserWindow } = require("electron");
+    const fs = require("fs");
+    const path = require("path");
+    
+    try {
+      // 임시 HTML 파일 생성
+      const tempDir = require("os").tmpdir();
+      const tempHtmlPath = path.join(tempDir, `temp-pdf-${Date.now()}.html`);
+      fs.writeFileSync(tempHtmlPath, htmlContent, "utf8");
+
+      // 숨겨진 브라우저 창 생성
+      const pdfWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+        },
+      });
+
+      // HTML 파일 로드
+      await pdfWindow.loadFile(tempHtmlPath);
+      
+      // PDF 생성 옵션
+      const pdfOptions = {
+        pageSize: "A4",
+        printBackground: true,
+        margins: {
+          marginType: "custom",
+          top: 0.4,
+          bottom: 0.4,
+          left: 0.4,
+          right: 0.4,
+        },
+        ...options,
+      };
+
+      // PDF 생성
+      const pdfBuffer = await pdfWindow.webContents.printToPDF(pdfOptions);
+      
+      // 임시 파일 삭제
+      pdfWindow.close();
+      fs.unlinkSync(tempHtmlPath);
+
+      return { success: true, data: pdfBuffer };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 module.exports = {

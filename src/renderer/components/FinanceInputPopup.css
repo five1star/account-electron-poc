@@ -1,7 +1,9 @@
 .finance-popup {
-  max-width: 1000px;
-  width: 95%;
-  max-height: 95vh;
+  max-width: 100%;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
 }
 
 .popup-header {
@@ -48,21 +50,21 @@
 }
 
 .finance-form {
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .form-row {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   align-items: flex-end;
 }
 
 .form-row-compact {
   display: flex;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   align-items: flex-end;
 }
 
@@ -89,8 +91,8 @@
 
 .form-group label,
 .form-group-compact label {
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #333;
 }
@@ -107,7 +109,7 @@
 .form-group-compact input[type="number"],
 .form-group-compact input[type="date"],
 .form-group-compact select {
-  padding: 0.5rem;
+  padding: 0.4rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.875rem;
@@ -140,7 +142,7 @@
 .checkbox-group-compact {
   flex: 0 0 auto;
   justify-content: center;
-  padding-top: 1.5rem;
+  padding-top: 1.2rem;
   min-width: 80px;
 }
 
@@ -222,7 +224,7 @@
 
 .submit-button-inline {
   flex: 0 0 auto;
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem 1.2rem;
   font-size: 0.875rem;
   font-weight: 500;
   border: none;
@@ -232,7 +234,7 @@
   cursor: pointer;
   transition: all 0.2s;
   height: fit-content;
-  margin-top: 1.5rem;
+  margin-top: 1.2rem;
 }
 
 .submit-button-inline:hover {
@@ -241,13 +243,60 @@
 }
 
 .records-section {
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   flex: 1;
-  min-height: 500px;
-  max-height: calc(95vh - 400px);
+  min-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+
+.summary-section {
+  padding: 1rem 1.5rem;
+  background: #f9f9f9;
+  border-top: 2px solid #e0e0e0;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #667eea;
+  font-size: 1rem;
+}
+
+.summary-subcategories {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.summary-subcategory-list {
+  flex: 1;
+  color: #555;
+  line-height: 1.5;
+}
+
+.summary-subcategory-item-inline {
+  display: inline;
+  font-weight: 500;
+  color: #333;
 }
 
 .records-table {
@@ -260,11 +309,12 @@
   background: #f5f5f5;
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 .records-table th {
   padding: 0.75rem;
-  text-align: left;
+  text-align: center;
   font-weight: 600;
   color: #333;
   border-bottom: 2px solid #ddd;
@@ -301,8 +351,11 @@
 }
 
 .edit-popup {
-  max-width: 600px;
-  width: 90%;
+  max-width: 100%;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
 }
 
 .form-actions {

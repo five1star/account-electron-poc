@@ -36,4 +36,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     yearly: (year) => ipcRenderer.invoke("report:yearly", year),
     getStatistics: (filters) => ipcRenderer.invoke("report:getStatistics", filters),
   },
+
+  // 파일 저장 다이얼로그
+  saveFile: (defaultPath, filters, fileData) =>
+    ipcRenderer.invoke("dialog:saveFile", defaultPath, filters, fileData),
+  
+  // PDF 생성 (HTML을 PDF로 변환)
+  generatePDF: (htmlContent, options) =>
+    ipcRenderer.invoke("pdf:generate", htmlContent, options),
 });
