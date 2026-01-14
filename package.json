@@ -1,0 +1,75 @@
+{
+  "name": "finance-management",
+  "version": "1.0.0",
+  "description": "재정 입력 & 관리 프로그램",
+  "main": "main.js",
+  "scripts": {
+    "postinstall": "electron-rebuild",
+    "start": "electron .",
+    "build:start": "npm run build && npm start",
+    "dev": "npm run kill-port && ELECTRON_DEV=true concurrently -k -s first -n \"VITE,ELECTRON\" -c \"cyan,magenta\" \"npm run dev:react\" \"node scripts/wait-for-vite.js && ELECTRON_DEV=true electron .\"",
+    "dev:react": "vite",
+    "kill-port": "lsof -ti:5173 | xargs kill -9 2>/dev/null || true",
+    "build": "vite build",
+    "build:win": "npm run build && electron-builder --win",
+    "build:win:dir": "npm run build && electron-builder --win --dir",
+    "preview": "vite preview",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "build": {
+    "appId": "com.finance-management.app",
+    "productName": "재정 입력 & 관리 프로그램",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "database.js",
+      "src/main/**/*",
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "재정 입력 & 관리 프로그램"
+    }
+  },
+  "keywords": [
+    "electron",
+    "react",
+    "finance",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "@electron/rebuild": "^3.2.9",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^4.5.2",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

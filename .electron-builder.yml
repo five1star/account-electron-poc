@@ -1,0 +1,23 @@
+appId: com.finance-management.app
+productName: 재정 입력 & 관리 프로그램
+directories:
+  output: dist-electron
+files:
+  - main.js
+  - preload.js
+  - database.js
+  - src/main/**/*
+  - dist/**/*
+  - node_modules/**/*
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 재정 입력 & 관리 프로그램
