@@ -1,12 +1,46 @@
-const Database = require("better-sqlite3");
 const path = require("path");
 const fs = require("fs");
 const { app } = require("electron");
 
 let db = null;
+let Database = null;
+
+// better-sqlite3를 안전하게 로드
+function loadDatabaseModule() {
+  if (Database) {
+    return Database;
+  }
+  
+  try {
+    // require.resolve는 네이티브 모듈 로드 전에 호출하면 문제를 일으킬 수 있으므로
+    // 직접 require만 시도
+    console.log("Attempting to load better-sqlite3...");
+    
+    // 동적으로 require하여 네이티브 모듈 로드
+    Database = require("better-sqlite3");
+    
+    // 모듈이 제대로 로드되었는지 간단한 테스트
+    if (!Database || typeof Database !== 'function') {
+      throw new Error("better-sqlite3 module loaded but is not a constructor");
+    }
+    
+    console.log("better-sqlite3 loaded successfully");
+    return Database;
+  } catch (error) {
+    console.error("Failed to load better-sqlite3:", error);
+    console.error("Error message:", error.message);
+    if (error.stack) {
+      console.error("Error stack:", error.stack);
+    }
+    throw new Error(`Failed to load better-sqlite3 native module: ${error.message}`);
+  }
+}
 
 function initDatabase() {
   try {
+    // better-sqlite3 모듈 로드
+    const DatabaseClass = loadDatabaseModule();
+    
     const userDataPath = app.getPath("userData");
 
     // userData 디렉토리가 없으면 생성
@@ -23,7 +57,7 @@ function initDatabase() {
     if (dbExists) {
       try {
         // 데이터베이스 파일이 손상되었는지 확인
-        const testDb = new Database(dbPath, { readonly: true });
+        const testDb = new DatabaseClass(dbPath, { readonly: true });
         testDb.pragma("integrity_check");
         testDb.close();
       } catch (error) {
@@ -56,7 +90,7 @@ function initDatabase() {
     }
 
     // 데이터베이스 연결 (파일이 없으면 자동 생성됨)
-    db = new Database(dbPath);
+    db = new DatabaseClass(dbPath);
 
     // 데이터베이스 무결성 검사
     try {
@@ -90,7 +124,8 @@ function initDatabase() {
       if (fs.existsSync(dbPath)) {
         fs.unlinkSync(dbPath);
       }
-      db = new Database(dbPath);
+      const DatabaseClass = loadDatabaseModule();
+      db = new DatabaseClass(dbPath);
       createTables();
       console.log("Database recreated successfully");
       return db;

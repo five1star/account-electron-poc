@@ -44,4 +44,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // PDF 생성 (HTML을 PDF로 변환)
   generatePDF: (htmlContent, options) =>
     ipcRenderer.invoke("pdf:generate", htmlContent, options),
+  
+  // 에러 로깅
+  logError: (error, context) =>
+    ipcRenderer.invoke("log:error", error, context),
 });

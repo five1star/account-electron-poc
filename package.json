@@ -1,24 +1,27 @@
 {
   "name": "finance-management",
   "version": "1.0.0",
-  "description": "재정 입력 & 관리 프로그램",
+  "description": "원주순복음중앙교회 재정관리",
   "main": "main.js",
   "scripts": {
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "electron-builder install-app-deps && electron-rebuild -f -w better-sqlite3",
     "start": "electron .",
-    "build:start": "npm run build && npm start",
-    "dev": "npm run kill-port && ELECTRON_DEV=true concurrently -k -s first -n \"VITE,ELECTRON\" -c \"cyan,magenta\" \"npm run dev:react\" \"node scripts/wait-for-vite.js && ELECTRON_DEV=true electron .\"",
+    "build:start": "pnpm run build && pnpm start",
+    "dev": "pnpm run kill-port && ELECTRON_DEV=true concurrently -k -s first -n \"VITE,ELECTRON\" -c \"cyan,magenta\" \"pnpm run dev:react\" \"node scripts/wait-for-vite.js && ELECTRON_DEV=true electron .\"",
     "dev:react": "vite",
     "kill-port": "lsof -ti:5173 | xargs kill -9 2>/dev/null || true",
     "build": "vite build",
-    "build:win": "npm run build && electron-builder --win",
-    "build:win:dir": "npm run build && electron-builder --win --dir",
+    "build:win": "pnpm run build && electron-builder --win",
+    "build:win:dir": "pnpm run build && electron-builder --win --dir",
+    "build:mac": "pnpm run clean:rebuild && pnpm run build && electron-builder --mac",
+    "build:mac:dir": "pnpm run clean:rebuild && pnpm run build && electron-builder --mac --dir",
+    "clean:rebuild": "rm -rf node_modules/better-sqlite3/build && electron-rebuild -f -w better-sqlite3",
     "preview": "vite preview",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "build": {
     "appId": "com.finance-management.app",
-    "productName": "재정 입력 & 관리 프로그램",
+    "productName": "원주순복음중앙교회 재정관리",
     "directories": {
       "output": "dist-electron"
     },
@@ -29,8 +32,15 @@
       "src/main/**/*",
       "dist/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/**/*.{md,ts,map}",
+      "!node_modules/.bin"
     ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**/*"
+    ],
+    "asar": true,
+    "afterPack": "./scripts/after-pack.js",
     "win": {
       "target": [
         {
@@ -40,14 +50,33 @@
           ]
         }
       ],
-      "icon": "build/icon.ico"
+      "icon": "src/renderer/image/logo.jpg"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "src/renderer/image/logo.jpg",
+      "category": "public.app-category.finance",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "entitlements": null,
+      "entitlementsInherit": null
+    },
+    "linux": {
+      "icon": "src/renderer/image/logo.jpg"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "재정 입력 & 관리 프로그램"
+      "shortcutName": "원주순복음중앙교회 재정관리"
     }
   },
   "keywords": [
@@ -58,11 +87,15 @@
   ],
   "author": "",
   "license": "MIT",
+  "packageManager": "pnpm@latest",
+  "engines": {
+    "pnpm": ">=8.0.0"
+  },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
     "@electron/rebuild": "^3.2.9",
+    "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
-    "electron": "^28.0.0",
+    "electron": "^27.3.0",
     "electron-builder": "^24.9.1",
     "vite": "^4.5.2",
     "wait-on": "^7.2.0"

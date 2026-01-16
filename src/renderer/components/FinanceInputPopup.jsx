@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./FinanceInputPopup.css";
 
 function FinanceInputPopup({ isOpen, onClose }) {
@@ -16,6 +16,7 @@ function FinanceInputPopup({ isOpen, onClose }) {
   const [records, setRecords] = useState([]);
   const [editingRecord, setEditingRecord] = useState(null);
   const [loading, setLoading] = useState(false);
+  const name1InputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -115,15 +116,21 @@ function FinanceInputPopup({ isOpen, onClose }) {
         data.name2 = isAnonymous ? null : (name2.trim() || null);
         const result = await window.electronAPI.finance.addIncome(data);
         if (result.success) {
-          resetForm();
+          resetFormPartial();
           loadRecords();
+          // 이름1 필드에 포커스
+          setTimeout(() => {
+            if (name1InputRef.current) {
+              name1InputRef.current.focus();
+            }
+          }, 100);
         } else {
           alert(result.error || "수입 추가에 실패했습니다.");
         }
       } else {
         const result = await window.electronAPI.finance.addExpense(data);
         if (result.success) {
-          resetForm();
+          resetFormPartial();
           loadRecords();
         } else {
           alert(result.error || "지출 추가에 실패했습니다.");
@@ -138,6 +145,16 @@ function FinanceInputPopup({ isOpen, onClose }) {
   const resetForm = () => {
     setSelectedMainCategory("");
     setSelectedSubCategory("");
+    setIsAnonymous(false);
+    setName1("");
+    setName2("");
+    setAmount("");
+    setMemo("");
+  };
+
+  const resetFormPartial = () => {
+    // 대분류, 하위항목은 유지
+    // 이름 필드만 리셋 (무명 체크 해제)
     setIsAnonymous(false);
     setName1("");
     setName2("");
@@ -313,8 +330,9 @@ function FinanceInputPopup({ isOpen, onClose }) {
           <div className="form-row-compact">
             {activeTab === "수입" && (
               <>
-                <div className="form-group checkbox-group-compact">
+                <div className="form-group-compact">
                   <label>
+                    이름1 {!isAnonymous && <span className="required">*</span>}
                     <input
                       type="checkbox"
                       checked={isAnonymous}
@@ -325,13 +343,12 @@ function FinanceInputPopup({ isOpen, onClose }) {
                           setName2("");
                         }
                       }}
+                      style={{ marginLeft: "0.5rem" }}
                     />
-                    무명
+                    <span style={{ marginLeft: "0.25rem", fontWeight: "normal" }}>무명</span>
                   </label>
-                </div>
-                <div className="form-group-compact">
-                  <label>이름1 {!isAnonymous && <span className="required">*</span>}</label>
                   <input
+                    ref={name1InputRef}
                     type="text"
                     value={name1}
                     onChange={(e) => setName1(e.target.value)}
@@ -353,14 +370,14 @@ function FinanceInputPopup({ isOpen, onClose }) {
             <div className="form-group-compact">
               <label>금액 <span className="required">*</span></label>
               <input
-                type="number"
-                value={amount}
+                type="text"
+                value={amount ? formatCurrency(parseInt(amount.replace(/,/g, ''))) : ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, "");
                   setAmount(value);
                 }}
                 required
-                min="1"
+                className="amount-input"
               />
             </div>
           </div>
@@ -672,14 +689,14 @@ function FinanceEditPopup({ record, type, onClose }) {
             <div className="form-group">
               <label>금액 <span className="required">*</span></label>
               <input
-                type="number"
-                value={amount}
+                type="text"
+                value={amount ? formatCurrency(parseInt(amount.replace(/,/g, ''))) : ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, "");
                   setAmount(value);
                 }}
                 required
-                min="1"
+                className="amount-input"
               />
             </div>
             <div className="form-group full-width">

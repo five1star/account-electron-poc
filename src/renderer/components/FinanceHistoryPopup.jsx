@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
+import "./FinanceInputPopup.css";
 
 // 한글 폰트 추가를 위한 유틸리티
 // 실제로는 Noto Sans KR 폰트를 base64로 변환하여 추가해야 합니다.
@@ -114,7 +115,7 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
       margin-top: 20px;
     }
     th {
-      background-color: #667eea;
+      background-color: #4caf50;
       color: white;
       padding: 8px;
       text-align: center;
@@ -196,7 +197,7 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
       <div className="popup-content history-popup" onClick={(e) => e.stopPropagation()}>
         <div className="popup-header">
           <div className="header-left">
-            <h2>입력 내역 확인</h2>
+            <h2>입력 확인</h2>
             <div className="tab-container-inline">
               <button
                 className={`tab-button-inline ${activeTab === "수입" ? "active" : ""}`}
@@ -361,6 +362,10 @@ function FinanceEditPopup({ record, type, onClose }) {
     }
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("ko-KR").format(amount);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -517,14 +522,14 @@ function FinanceEditPopup({ record, type, onClose }) {
             <div className="form-group">
               <label>금액 <span className="required">*</span></label>
               <input
-                type="number"
-                value={amount}
+                type="text"
+                value={amount ? formatCurrency(parseInt(amount.replace(/,/g, '') || 0)) : ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, "");
                   setAmount(value);
                 }}
                 required
-                min="1"
+                className="amount-input"
               />
             </div>
             <div className="form-group full-width">

@@ -1,14 +1,37 @@
 const { ipcMain } = require("electron");
-const financeService = require("../services/financeService");
-const categoryService = require("../services/categoryService");
-const reportService = require("../services/reportService");
+
+// 서비스들을 지연 로드 (better-sqlite3 네이티브 모듈 로딩 지연)
+let financeService = null;
+let categoryService = null;
+let reportService = null;
+
+function getFinanceService() {
+  if (!financeService) {
+    financeService = require("../services/financeService");
+  }
+  return financeService;
+}
+
+function getCategoryService() {
+  if (!categoryService) {
+    categoryService = require("../services/categoryService");
+  }
+  return categoryService;
+}
+
+function getReportService() {
+  if (!reportService) {
+    reportService = require("../services/reportService");
+  }
+  return reportService;
+}
 
 // IPC 핸들러 등록 함수
 function registerIpcHandlers() {
   // 재정 수입 입력 관련 핸들러
   ipcMain.handle("finance:addIncome", async (event, data) => {
     try {
-      const result = financeService.addIncome(data);
+      const result = getFinanceService().addIncome(data);
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: error.message };
@@ -18,7 +41,7 @@ function registerIpcHandlers() {
   // 재정 지출 입력 관련 핸들러
   ipcMain.handle("finance:addExpense", async (event, data) => {
     try {
-      const result = financeService.addExpense(data);
+      const result = getFinanceService().addExpense(data);
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: error.message };
@@ -28,7 +51,7 @@ function registerIpcHandlers() {
   // 재정 수입 조회
   ipcMain.handle("finance:getIncomeList", async (event, filters = {}) => {
     try {
-      const data = financeService.getIncomeList(filters);
+      const data = getFinanceService().getIncomeList(filters);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -38,7 +61,7 @@ function registerIpcHandlers() {
   // 재정 지출 조회
   ipcMain.handle("finance:getExpenseList", async (event, filters = {}) => {
     try {
-      const data = financeService.getExpenseList(filters);
+      const data = getFinanceService().getExpenseList(filters);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -48,7 +71,7 @@ function registerIpcHandlers() {
   // 재정 수입 수정
   ipcMain.handle("finance:updateIncome", async (event, id, data) => {
     try {
-      const result = financeService.updateIncome(id, data);
+      const result = getFinanceService().updateIncome(id, data);
       return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
@@ -58,7 +81,7 @@ function registerIpcHandlers() {
   // 재정 지출 수정
   ipcMain.handle("finance:updateExpense", async (event, id, data) => {
     try {
-      const result = financeService.updateExpense(id, data);
+      const result = getFinanceService().updateExpense(id, data);
       return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
@@ -68,7 +91,7 @@ function registerIpcHandlers() {
   // 재정 수입 삭제
   ipcMain.handle("finance:deleteIncome", async (event, id) => {
     try {
-      const result = financeService.deleteIncome(id);
+      const result = getFinanceService().deleteIncome(id);
       return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
@@ -78,7 +101,7 @@ function registerIpcHandlers() {
   // 재정 지출 삭제
   ipcMain.handle("finance:deleteExpense", async (event, id) => {
     try {
-      const result = financeService.deleteExpense(id);
+      const result = getFinanceService().deleteExpense(id);
       return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
@@ -88,7 +111,7 @@ function registerIpcHandlers() {
   // 항목 관리 관련 핸들러
   ipcMain.handle("category:getAll", async (event, type = null) => {
     try {
-      const data = categoryService.getAllCategories(type);
+      const data = getCategoryService().getAllCategories(type);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -97,7 +120,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("category:getMainCategories", async (event, type) => {
     try {
-      const data = categoryService.getMainCategories(type);
+      const data = getCategoryService().getMainCategories(type);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -106,7 +129,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("category:getSubCategories", async (event, type, main_category) => {
     try {
-      const data = categoryService.getSubCategories(type, main_category);
+      const data = getCategoryService().getSubCategories(type, main_category);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -115,7 +138,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("category:getHierarchy", async (event, type = null) => {
     try {
-      const data = categoryService.getCategoriesHierarchy(type);
+      const data = getCategoryService().getCategoriesHierarchy(type);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -124,7 +147,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("category:add", async (event, data) => {
     try {
-      const result = categoryService.addCategory(data);
+      const result = getCategoryService().addCategory(data);
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error: error.message };
@@ -133,7 +156,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("category:update", async (event, id, data) => {
     try {
-      const result = categoryService.updateCategory(id, data);
+      const result = getCategoryService().updateCategory(id, data);
       return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
@@ -142,7 +165,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("category:delete", async (event, id) => {
     try {
-      const result = categoryService.deleteCategory(id);
+      const result = getCategoryService().deleteCategory(id);
       return { success: result.success };
     } catch (error) {
       return { success: false, error: error.message };
@@ -152,7 +175,7 @@ function registerIpcHandlers() {
   // 주간 보고서 관련 핸들러
   ipcMain.handle("report:weekly", async (event, startDate, endDate) => {
     try {
-      const data = reportService.generateWeeklyReport(startDate, endDate);
+      const data = getReportService().generateWeeklyReport(startDate, endDate);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -162,7 +185,7 @@ function registerIpcHandlers() {
   // 연간 보고서 관련 핸들러
   ipcMain.handle("report:yearly", async (event, year) => {
     try {
-      const data = reportService.generateYearlyReport(year);
+      const data = getReportService().generateYearlyReport(year);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -172,7 +195,7 @@ function registerIpcHandlers() {
   // 통계 데이터 조회
   ipcMain.handle("report:getStatistics", async (event, filters = {}) => {
     try {
-      const data = reportService.getStatistics(filters);
+      const data = getReportService().getStatistics(filters);
       return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
@@ -249,6 +272,19 @@ function registerIpcHandlers() {
       return { success: true, data: pdfBuffer };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  });
+
+  // 에러 로깅 핸들러
+  ipcMain.handle("log:error", async (event, error, context) => {
+    try {
+      const { appendError } = require("../utils/logger");
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      appendError(errorObj, context || 'Renderer Process');
+      return { success: true };
+    } catch (logError) {
+      console.error("Failed to log error:", logError);
+      return { success: false, error: logError.message };
     }
   });
 }

@@ -223,6 +223,21 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         </div>
 
         <div className="category-management">
+          <div className="add-main-category">
+            <input
+              type="text"
+              value={newMainCategoryName}
+              onChange={(e) => setNewMainCategoryName(e.target.value)}
+              placeholder="대분류 이름"
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !editingMainCategory) {
+                  handleAddMainCategory();
+                }
+              }}
+            />
+            <button onClick={handleAddMainCategory}>대분류 추가</button>
+          </div>
+
           {loading ? (
             <div className="loading">로딩 중...</div>
           ) : (
@@ -398,21 +413,6 @@ function CategoryManagementPopup({ isOpen, onClose }) {
               )}
             </div>
           )}
-
-          <div className="add-main-category">
-            <input
-              type="text"
-              value={newMainCategoryName}
-              onChange={(e) => setNewMainCategoryName(e.target.value)}
-              placeholder="대분류 이름"
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !editingMainCategory) {
-                  handleAddMainCategory();
-                }
-              }}
-            />
-            <button onClick={handleAddMainCategory}>대분류 추가</button>
-          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 appId: com.finance-management.app
-productName: 재정 입력 & 관리 프로그램
+productName: 원주순복음중앙교회 재정관리
 directories:
   output: dist-electron
 files:
@@ -20,4 +20,4 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: 재정 입력 & 관리 프로그램
+  shortcutName: 원주순복음중앙교회 재정관리

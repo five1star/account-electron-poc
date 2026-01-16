@@ -74,8 +74,12 @@ class FinanceService {
       query += " AND sub_category = ?";
       params.push(filters.sub_category);
     }
+    if (filters.name1) {
+      query += " AND name1 LIKE ?";
+      params.push(`%${filters.name1}%`);
+    }
 
-    query += " ORDER BY date DESC, id DESC";
+    query += " ORDER BY main_category ASC, COALESCE(sub_category, '') ASC, date DESC, id DESC";
 
     const stmt = db.prepare(query);
     return stmt.all(...params);
@@ -104,7 +108,7 @@ class FinanceService {
       params.push(filters.sub_category);
     }
 
-    query += " ORDER BY date DESC, id DESC";
+    query += " ORDER BY main_category ASC, COALESCE(sub_category, '') ASC, date DESC, id DESC";
 
     const stmt = db.prepare(query);
     return stmt.all(...params);

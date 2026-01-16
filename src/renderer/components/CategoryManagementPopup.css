@@ -84,8 +84,8 @@
 }
 
 .tab-button.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #4caf50;
+  border-bottom-color: #4caf50;
   font-weight: 600;
 }
 
@@ -109,10 +109,15 @@
 
 .category-list {
   margin-bottom: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .category-item {
-  margin-bottom: 2rem;
+  flex: 0 0 calc(50% - 0.5rem);
+  min-width: 0;
+  margin-bottom: 1rem;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 1rem;
@@ -247,9 +252,9 @@
 }
 
 .add-sub-category-button:hover {
-  border-color: #667eea;
-  color: #667eea;
-  background: #f5f7ff;
+  border-color: #4caf50;
+  color: #4caf50;
+  background: #e8f5e9;
 }
 
 .add-main-category {
@@ -259,6 +264,7 @@
   background: #f5f5f5;
   border-radius: 8px;
   border: 1px dashed #ccc;
+  margin-bottom: 1.5rem;
 }
 
 .add-main-category input {
@@ -273,7 +279,7 @@
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
   color: white;
   border-radius: 4px;
   cursor: pointer;
@@ -283,5 +289,6 @@
 
 .add-main-category button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, #43a047 0%, #66bb6a 50%, #81c784 100%);
 }
