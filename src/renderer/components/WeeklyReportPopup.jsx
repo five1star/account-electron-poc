@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 import "./FinanceInputPopup.css";
+import { formatCurrency } from "../utils/formatCurrency";
 
 function WeeklyReportPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("수입"); // "수입" 또는 "지출"
@@ -125,9 +126,6 @@ function WeeklyReportPopup({ isOpen, onClose }) {
     return `${year}-${month}-${day}`;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("ko-KR").format(amount);
-  };
 
   const handleSavePDF = async () => {
     if (summaryData.length === 0) {

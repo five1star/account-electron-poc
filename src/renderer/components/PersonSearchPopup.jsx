@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 import "./FinanceInputPopup.css";
+import { formatCurrency } from "../utils/formatCurrency";
 
 function PersonSearchPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("개인 검색"); // "개인 검색" 또는 "인물 종합"
@@ -159,9 +160,6 @@ function PersonSearchPopup({ isOpen, onClose }) {
     return `${year}-${month}-${day}`;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("ko-KR").format(amount);
-  };
 
   const applySorting = (data) => {
     if (!sortColumn) {

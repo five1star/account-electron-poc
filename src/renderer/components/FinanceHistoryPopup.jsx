@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 import "./FinanceInputPopup.css";
+import { formatCurrency } from "../utils/formatCurrency";
 
 // 한글 폰트 추가를 위한 유틸리티
 // 실제로는 Noto Sans KR 폰트를 base64로 변환하여 추가해야 합니다.
@@ -42,11 +43,6 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
 
   const handleEdit = (record) => {
     setEditingRecord(record);
-  };
-
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("ko-KR").format(amount);
   };
 
   const handleSavePDF = async () => {
@@ -362,10 +358,6 @@ function FinanceEditPopup({ record, type, onClose }) {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("ko-KR").format(amount);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -523,7 +515,7 @@ function FinanceEditPopup({ record, type, onClose }) {
               <label>금액 <span className="required">*</span></label>
               <input
                 type="text"
-                value={amount ? formatCurrency(parseInt(amount.replace(/,/g, '') || 0)) : ''}
+                value={formatCurrency(amount)}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, "");
                   setAmount(value);

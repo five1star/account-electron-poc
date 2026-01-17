@@ -71,25 +71,38 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     try {
       // 기존 항목 삭제 후 새로 추가 (간단한 방법)
       // 실제로는 더 정교한 업데이트 로직이 필요할 수 있음
-      const allCategories = await window.electronAPI.category.getAll(activeTab);
+      const result = await window.electronAPI.category.getAll(activeTab);
+      if (!result.success) {
+        alert(result.error || "항목을 불러오는데 실패했습니다.");
+        return;
+      }
+      const allCategories = result.data || [];
       const toUpdate = allCategories.filter(
         (cat) => cat.main_category === mainCategory
       );
 
+      let hasError = false;
       for (const cat of toUpdate) {
-        await window.electronAPI.category.update(cat.id, {
+        const result = await window.electronAPI.category.update(cat.id, {
           type: activeTab,
           main_category: newMainCategoryName.trim(),
           sub_category: cat.sub_category,
         });
+        if (!result.success) {
+          hasError = true;
+          alert(result.error || "대분류 수정에 실패했습니다.");
+          break;
+        }
       }
 
-      setEditingMainCategory(null);
-      setNewMainCategoryName("");
-      loadCategories();
+      if (!hasError) {
+        setEditingMainCategory(null);
+        setNewMainCategoryName("");
+        loadCategories();
+      }
     } catch (error) {
       console.error("대분류 수정 실패:", error);
-      alert("대분류 수정에 실패했습니다.");
+      alert("대분류 수정에 실패했습니다: " + (error.message || error));
     }
   };
 
@@ -99,19 +112,32 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     }
 
     try {
-      const allCategories = await window.electronAPI.category.getAll(activeTab);
+      const result = await window.electronAPI.category.getAll(activeTab);
+      if (!result.success) {
+        alert(result.error || "항목을 불러오는데 실패했습니다.");
+        return;
+      }
+      const allCategories = result.data || [];
       const toDelete = allCategories.filter(
         (cat) => cat.main_category === mainCategory
       );
 
+      let hasError = false;
       for (const cat of toDelete) {
-        await window.electronAPI.category.delete(cat.id);
+        const result = await window.electronAPI.category.delete(cat.id);
+        if (!result.success) {
+          hasError = true;
+          alert(result.error || "대분류 삭제에 실패했습니다.");
+          break;
+        }
       }
 
-      loadCategories();
+      if (!hasError) {
+        loadCategories();
+      }
     } catch (error) {
       console.error("대분류 삭제 실패:", error);
-      alert("대분류 삭제에 실패했습니다.");
+      alert("대분류 삭제에 실패했습니다: " + (error.message || error));
     }
   };
 
@@ -148,7 +174,12 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     }
 
     try {
-      const allCategories = await window.electronAPI.category.getAll(activeTab);
+      const result = await window.electronAPI.category.getAll(activeTab);
+      if (!result.success) {
+        alert(result.error || "항목을 불러오는데 실패했습니다.");
+        return;
+      }
+      const allCategories = result.data || [];
       const toUpdate = allCategories.find(
         (cat) =>
           cat.main_category === mainCategory &&
@@ -156,19 +187,25 @@ function CategoryManagementPopup({ isOpen, onClose }) {
       );
 
       if (toUpdate) {
-        await window.electronAPI.category.update(toUpdate.id, {
+        const result = await window.electronAPI.category.update(toUpdate.id, {
           type: activeTab,
           main_category: mainCategory,
           sub_category: newSubCategoryName.trim(),
         });
 
-        setEditingSubCategory(null);
-        setNewSubCategoryName("");
-        loadCategories();
+        if (result.success) {
+          setEditingSubCategory(null);
+          setNewSubCategoryName("");
+          loadCategories();
+        } else {
+          alert(result.error || "하위 항목 수정에 실패했습니다.");
+        }
+      } else {
+        alert("수정할 하위 항목을 찾을 수 없습니다.");
       }
     } catch (error) {
       console.error("하위 항목 수정 실패:", error);
-      alert("하위 항목 수정에 실패했습니다.");
+      alert("하위 항목 수정에 실패했습니다: " + (error.message || error));
     }
   };
 
@@ -178,7 +215,12 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     }
 
     try {
-      const allCategories = await window.electronAPI.category.getAll(activeTab);
+      const result = await window.electronAPI.category.getAll(activeTab);
+      if (!result.success) {
+        alert(result.error || "항목을 불러오는데 실패했습니다.");
+        return;
+      }
+      const allCategories = result.data || [];
       const toDelete = allCategories.find(
         (cat) =>
           cat.main_category === mainCategory &&
@@ -186,12 +228,18 @@ function CategoryManagementPopup({ isOpen, onClose }) {
       );
 
       if (toDelete) {
-        await window.electronAPI.category.delete(toDelete.id);
-        loadCategories();
+        const result = await window.electronAPI.category.delete(toDelete.id);
+        if (result.success) {
+          loadCategories();
+        } else {
+          alert(result.error || "하위 항목 삭제에 실패했습니다.");
+        }
+      } else {
+        alert("삭제할 하위 항목을 찾을 수 없습니다.");
       }
     } catch (error) {
       console.error("하위 항목 삭제 실패:", error);
-      alert("하위 항목 삭제에 실패했습니다.");
+      alert("하위 항목 삭제에 실패했습니다: " + (error.message || error));
     }
   };
 

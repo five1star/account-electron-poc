@@ -10,7 +10,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
+  background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 50%, #e0e0e0 100%);
   min-height: 100vh;
 }
 
@@ -28,6 +28,7 @@ body {
   flex-direction: column;
   width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .logo-top-section {
@@ -49,51 +50,85 @@ body {
 }
 
 .button-container {
-  flex: 1;
+  width: 50%;
+  max-width: 600px;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  padding: 2rem;
+  gap: 1rem;
+  padding: 1.5rem;
   justify-content: center;
   align-items: flex-start;
   align-content: flex-start;
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.version-text {
+.version-section {
   position: absolute;
   bottom: 1rem;
   right: 1rem;
-  font-size: 0.7rem;
-  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: rgba(255, 255, 255, 0.9);
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.menu-button {
-  flex: 0 0 calc(50% - 0.75rem);
-  padding: 1.5rem 2rem;
+.settings-button {
+  background: none;
+  border: none;
   font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+  opacity: 0.6;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-button:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.version-text {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.menu-button {
+  flex: 0 0 calc(50% - 0.5rem);
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: white;
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
+  background: #4caf50;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
 }
 
 .menu-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
-  background: linear-gradient(135deg, #43a047 0%, #66bb6a 50%, #81c784 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  background: #43a047;
 }
 
 .menu-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 1px 4px rgba(76, 175, 80, 0.3);
 }

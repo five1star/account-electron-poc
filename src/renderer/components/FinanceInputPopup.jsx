@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./FinanceInputPopup.css";
+import { formatCurrency } from "../utils/formatCurrency";
 
 function FinanceInputPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("수입"); // "수입" 또는 "지출"
@@ -195,9 +196,6 @@ function FinanceInputPopup({ isOpen, onClose }) {
     return `${year}-${month}-${day}`;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("ko-KR").format(amount);
-  };
 
   // 총계 계산 (수입만)
   const calculateSummary = () => {

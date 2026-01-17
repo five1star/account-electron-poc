@@ -48,4 +48,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // 에러 로깅
   logError: (error, context) =>
     ipcRenderer.invoke("log:error", error, context),
+  
+  // 설정 관련 API
+  settings: {
+    getDbInfo: () => ipcRenderer.invoke("settings:getDbInfo"),
+    backupDatabase: () => ipcRenderer.invoke("settings:backupDatabase"),
+    restoreDatabase: () => ipcRenderer.invoke("settings:restoreDatabase"),
+  },
 });

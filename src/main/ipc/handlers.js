@@ -287,6 +287,131 @@ function registerIpcHandlers() {
       return { success: false, error: logError.message };
     }
   });
+
+  // 설정 관련 핸들러
+  ipcMain.handle("settings:getDbInfo", async (event) => {
+    try {
+      const { app } = require("electron");
+      const path = require("path");
+      const fs = require("fs");
+      
+      const userDataPath = app.getPath("userData");
+      const dbPath = path.join(userDataPath, "finance.db");
+      const fileName = path.basename(dbPath);
+      
+      let lastUpdated = null;
+      if (fs.existsSync(dbPath)) {
+        const stats = fs.statSync(dbPath);
+        lastUpdated = stats.mtime;
+      }
+      
+      return {
+        success: true,
+        data: {
+          fileName: fileName,
+          filePath: dbPath,
+          lastUpdated: lastUpdated,
+        },
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("settings:backupDatabase", async (event) => {
+    try {
+      const { app, dialog } = require("electron");
+      const path = require("path");
+      const fs = require("fs");
+      
+      const userDataPath = app.getPath("userData");
+      const dbPath = path.join(userDataPath, "finance.db");
+      
+      if (!fs.existsSync(dbPath)) {
+        return { success: false, error: "DB 파일을 찾을 수 없습니다." };
+      }
+
+      // 기본 파일명 생성 (wonjufgcc-yyyy-mm-dd.db)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const defaultFileName = `wonjufgcc-${year}-${month}-${day}.db`;
+      
+      const result = await dialog.showSaveDialog({
+        title: "DB 백업 저장",
+        defaultPath: defaultFileName,
+        filters: [
+          { name: "Database Files", extensions: ["db"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
+      });
+
+      if (result.canceled) {
+        return { success: false, error: "백업이 취소되었습니다." };
+      }
+
+      const backupPath = result.filePath;
+      fs.copyFileSync(dbPath, backupPath);
+
+      return {
+        success: true,
+        data: backupPath,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("settings:restoreDatabase", async (event) => {
+    try {
+      const { app, dialog } = require("electron");
+      const path = require("path");
+      const fs = require("fs");
+      
+      const result = await dialog.showOpenDialog({
+        title: "DB 복구 파일 선택",
+        filters: [
+          { name: "Database Files", extensions: ["db"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
+        properties: ["openFile"],
+      });
+
+      if (result.canceled) {
+        return { success: false, error: "복구가 취소되었습니다." };
+      }
+
+      const backupPath = result.filePaths[0];
+      
+      if (!fs.existsSync(backupPath)) {
+        return { success: false, error: "선택한 파일을 찾을 수 없습니다." };
+      }
+
+      const userDataPath = app.getPath("userData");
+      const dbPath = path.join(userDataPath, "finance.db");
+      
+      // 현재 DB 파일이 열려있으면 닫아야 함
+      // database.js의 closeDatabase 함수를 사용할 수 없으므로
+      // 직접 처리하거나 경고만 표시
+      
+      // 현재 DB 파일 백업 (복구 전)
+      const currentBackupPath = `${dbPath}.backup.${Date.now()}`;
+      if (fs.existsSync(dbPath)) {
+        fs.copyFileSync(dbPath, currentBackupPath);
+      }
+
+      // 백업 파일을 현재 DB 위치로 복사
+      fs.copyFileSync(backupPath, dbPath);
+
+      return {
+        success: true,
+        data: backupPath,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 module.exports = {
