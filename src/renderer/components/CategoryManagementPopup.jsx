@@ -34,7 +34,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
 
   const handleAddMainCategory = async () => {
     if (!newMainCategoryName.trim()) {
-      alert("대분류 이름을 입력해주세요.");
+      alert("항 이름을 입력해주세요.");
       return;
     }
 
@@ -49,21 +49,21 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         setNewMainCategoryName("");
         loadCategories();
       } else {
-        alert(result.error || "대분류 추가에 실패했습니다.");
+        alert(result.error || "항 추가에 실패했습니다.");
       }
     } catch (error) {
-      console.error("대분류 추가 실패:", error);
-      alert("대분류 추가에 실패했습니다.");
+      console.error("항 추가 실패:", error);
+      alert("항 추가에 실패했습니다.");
     }
   };
 
   const handleEditMainCategory = async (mainCategory) => {
     if (!newMainCategoryName.trim()) {
-      alert("대분류 이름을 입력해주세요.");
+      alert("항 이름을 입력해주세요.");
       return;
     }
 
-    // 기존 대분류의 모든 하위 항목을 찾아서 업데이트
+    // 기존 항의 모든 목을 찾아서 업데이트
     const subCategories = categories.find(
       (cat) => cat.main_category === mainCategory
     )?.sub_categories || [];
@@ -90,7 +90,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         });
         if (!result.success) {
           hasError = true;
-          alert(result.error || "대분류 수정에 실패했습니다.");
+          alert(result.error || "항 수정에 실패했습니다.");
           break;
         }
       }
@@ -101,13 +101,13 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         loadCategories();
       }
     } catch (error) {
-      console.error("대분류 수정 실패:", error);
-      alert("대분류 수정에 실패했습니다: " + (error.message || error));
+      console.error("항 수정 실패:", error);
+      alert("항 수정에 실패했습니다: " + (error.message || error));
     }
   };
 
   const handleDeleteMainCategory = async (mainCategory) => {
-    if (!confirm(`"${mainCategory}" 대분류를 삭제하시겠습니까?`)) {
+    if (!confirm(`"${mainCategory}" 항를 삭제하시겠습니까?`)) {
       return;
     }
 
@@ -127,7 +127,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         const result = await window.electronAPI.category.delete(cat.id);
         if (!result.success) {
           hasError = true;
-          alert(result.error || "대분류 삭제에 실패했습니다.");
+          alert(result.error || "항 삭제에 실패했습니다.");
           break;
         }
       }
@@ -136,14 +136,14 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         loadCategories();
       }
     } catch (error) {
-      console.error("대분류 삭제 실패:", error);
-      alert("대분류 삭제에 실패했습니다: " + (error.message || error));
+      console.error("항 삭제 실패:", error);
+      alert("항 삭제에 실패했습니다: " + (error.message || error));
     }
   };
 
   const handleAddSubCategory = async (mainCategory) => {
     if (!newSubCategoryName.trim()) {
-      alert("하위 항목 이름을 입력해주세요.");
+      alert("목 이름을 입력해주세요.");
       return;
     }
 
@@ -159,17 +159,17 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         setSelectedMainCategory(null);
         loadCategories();
       } else {
-        alert(result.error || "하위 항목 추가에 실패했습니다.");
+        alert(result.error || "목 추가에 실패했습니다.");
       }
     } catch (error) {
-      console.error("하위 항목 추가 실패:", error);
-      alert("하위 항목 추가에 실패했습니다.");
+      console.error("목 추가 실패:", error);
+      alert("목 추가에 실패했습니다.");
     }
   };
 
   const handleEditSubCategory = async (mainCategory, oldSubCategory) => {
     if (!newSubCategoryName.trim()) {
-      alert("하위 항목 이름을 입력해주세요.");
+      alert("목 이름을 입력해주세요.");
       return;
     }
 
@@ -198,19 +198,19 @@ function CategoryManagementPopup({ isOpen, onClose }) {
           setNewSubCategoryName("");
           loadCategories();
         } else {
-          alert(result.error || "하위 항목 수정에 실패했습니다.");
+          alert(result.error || "목 수정에 실패했습니다.");
         }
       } else {
-        alert("수정할 하위 항목을 찾을 수 없습니다.");
+        alert("수정할 목을 찾을 수 없습니다.");
       }
     } catch (error) {
-      console.error("하위 항목 수정 실패:", error);
-      alert("하위 항목 수정에 실패했습니다: " + (error.message || error));
+      console.error("목 수정 실패:", error);
+      alert("목 수정에 실패했습니다: " + (error.message || error));
     }
   };
 
   const handleDeleteSubCategory = async (mainCategory, subCategory) => {
-    if (!confirm(`"${subCategory}" 하위 항목을 삭제하시겠습니까?`)) {
+    if (!confirm(`"${subCategory}" 목을 삭제하시겠습니까?`)) {
       return;
     }
 
@@ -232,14 +232,14 @@ function CategoryManagementPopup({ isOpen, onClose }) {
         if (result.success) {
           loadCategories();
         } else {
-          alert(result.error || "하위 항목 삭제에 실패했습니다.");
+          alert(result.error || "목 삭제에 실패했습니다.");
         }
       } else {
-        alert("삭제할 하위 항목을 찾을 수 없습니다.");
+        alert("삭제할 목을 찾을 수 없습니다.");
       }
     } catch (error) {
-      console.error("하위 항목 삭제 실패:", error);
-      alert("하위 항목 삭제에 실패했습니다: " + (error.message || error));
+      console.error("목 삭제 실패:", error);
+      alert("목 삭제에 실패했습니다: " + (error.message || error));
     }
   };
 
@@ -276,14 +276,14 @@ function CategoryManagementPopup({ isOpen, onClose }) {
               type="text"
               value={newMainCategoryName}
               onChange={(e) => setNewMainCategoryName(e.target.value)}
-              placeholder="대분류 이름"
+              placeholder="항 이름"
               onKeyPress={(e) => {
                 if (e.key === "Enter" && !editingMainCategory) {
                   handleAddMainCategory();
                 }
               }}
             />
-            <button onClick={handleAddMainCategory}>대분류 추가</button>
+            <button onClick={handleAddMainCategory}>항 추가</button>
           </div>
 
           {loading ? (
@@ -306,7 +306,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
                             onChange={(e) =>
                               setNewMainCategoryName(e.target.value)
                             }
-                            placeholder="대분류 이름"
+                            placeholder="항 이름"
                             autoFocus
                           />
                           <button
@@ -361,7 +361,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
                                 onChange={(e) =>
                                   setNewSubCategoryName(e.target.value)
                                 }
-                                placeholder="하위 항목 이름"
+                                placeholder="목 이름"
                                 autoFocus
                               />
                               <button
@@ -421,7 +421,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
                             onChange={(e) =>
                               setNewSubCategoryName(e.target.value)
                             }
-                            placeholder="하위 항목 이름"
+                            placeholder="목 이름"
                             onKeyPress={(e) => {
                               if (e.key === "Enter") {
                                 handleAddSubCategory(category.main_category);
@@ -452,7 +452,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
                             setSelectedMainCategory(category.main_category)
                           }
                         >
-                          + 하위 항목 추가
+                          + 목 추가
                         </button>
                       )}
                     </div>

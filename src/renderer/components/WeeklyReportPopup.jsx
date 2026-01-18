@@ -86,7 +86,7 @@ function WeeklyReportPopup({ isOpen, onClose }) {
       }
       if (result.success) {
         setRecords(result.data);
-        // 대분류/하위항목별로 그룹화하여 합계 계산
+        // 항/하위항목별로 그룹화하여 합계 계산
         const grouped = {};
         result.data.forEach((record) => {
           const key = `${record.main_category}|||${record.sub_category || "(미분류)"}`;
@@ -100,9 +100,9 @@ function WeeklyReportPopup({ isOpen, onClose }) {
           grouped[key].total += record.amount;
         });
         
-        // 배열로 변환하고 대분류별로 그룹화한 후 총액 순으로 정렬
+        // 배열로 변환하고 항별로 그룹화한 후 총액 순으로 정렬
         const summary = Object.values(grouped);
-        // 대분류별로 먼저 정렬, 그 다음 총액 순으로 정렬
+        // 항별로 먼저 정렬, 그 다음 총액 순으로 정렬
         summary.sort((a, b) => {
           if (a.main_category !== b.main_category) {
             return a.main_category.localeCompare(b.main_category);
@@ -140,7 +140,7 @@ function WeeklyReportPopup({ isOpen, onClose }) {
       // 기본 파일명 생성
       const defaultFileName = `주간_${activeTab}_보고서_${dateRange.replace(/[~ ]/g, "_")}.pdf`;
 
-      // HTML 테이블 생성 (대분류/하위항목/총액)
+      // HTML 테이블 생성 (항/하위항목/총액)
       const tableRows = summaryData.map((item) => {
         return `
           <tr>
@@ -236,8 +236,8 @@ function WeeklyReportPopup({ isOpen, onClose }) {
   <table>
     <thead>
       <tr>
-        <th>대분류</th>
-        <th>하위 항목</th>
+        <th>항</th>
+        <th>목</th>
         <th>총액</th>
       </tr>
     </thead>
@@ -358,8 +358,8 @@ function WeeklyReportPopup({ isOpen, onClose }) {
             <table className="records-table-history">
               <thead>
                 <tr>
-                  <th>대분류</th>
-                  <th>하위 항목</th>
+                  <th>항</th>
+                  <th>목</th>
                   <th>총액</th>
                 </tr>
               </thead>

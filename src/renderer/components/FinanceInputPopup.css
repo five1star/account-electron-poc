@@ -95,6 +95,16 @@
   font-size: 0.8rem;
   font-weight: 500;
   color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.total-info {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: #666;
+  margin-left: auto;
 }
 
 .form-group .required {
@@ -266,9 +276,24 @@
 }
 
 .summary-section {
-  padding: 1rem 1.5rem;
+  padding: 1.5rem;
   background: #f9f9f9;
   border-top: 2px solid #e0e0e0;
+  display: flex;
+  gap: 2rem;
+  min-height: 200px;
+}
+
+.summary-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .summary-item {

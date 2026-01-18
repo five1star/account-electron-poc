@@ -20,7 +20,7 @@ function MainScreen() {
       setIsCategoryPopupOpen(true);
     } else if (buttonName === "재정 입력") {
       setIsFinancePopupOpen(true);
-    } else if (buttonName === "입력 확인") {
+    } else if (buttonName === "입력 목록") {
       setIsHistoryPopupOpen(true);
     } else if (buttonName === "주간 보고서") {
       setIsWeeklyReportOpen(true);
@@ -48,9 +48,9 @@ function MainScreen() {
         </button>
         <button
           className="menu-button"
-          onClick={() => handleButtonClick("입력 확인")}
+          onClick={() => handleButtonClick("입력 목록")}
         >
-          입력 확인
+          입력 목록
         </button>
         <button
           className="menu-button"

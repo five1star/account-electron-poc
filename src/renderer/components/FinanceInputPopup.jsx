@@ -17,12 +17,23 @@ function FinanceInputPopup({ isOpen, onClose }) {
   const [records, setRecords] = useState([]);
   const [editingRecord, setEditingRecord] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mainCategoryDailyTotal, setMainCategoryDailyTotal] = useState(0); // 항의 금일 합계
+  const [mainCategoryYearlyTotal, setMainCategoryYearlyTotal] = useState(0); // 항의 총합계
+  const [subCategoryDailyTotal, setSubCategoryDailyTotal] = useState(0); // 목의 금일 합계
+  const [subCategoryYearlyTotal, setSubCategoryYearlyTotal] = useState(0); // 목의 총합계
+  const [dailyIncomeTotal, setDailyIncomeTotal] = useState(0); // 금일 수입 총액
+  const [dailyExpenseTotal, setDailyExpenseTotal] = useState(0); // 금일 지출 총액
+  const [yearlyIncomeTotal, setYearlyIncomeTotal] = useState(0); // 총 수입금액
+  const [yearlyExpenseTotal, setYearlyExpenseTotal] = useState(0); // 총 지출금액
+  const [previousDayIncomeTotal, setPreviousDayIncomeTotal] = useState(0); // 전일까지 수입 총액
+  const [previousDayExpenseTotal, setPreviousDayExpenseTotal] = useState(0); // 전일까지 지출 총액
   const name1InputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       loadMainCategories();
       loadRecords();
+      loadAllTotals();
     }
   }, [isOpen, activeTab, date]);
 
@@ -35,6 +46,24 @@ function FinanceInputPopup({ isOpen, onClose }) {
     }
   }, [selectedMainCategory, activeTab]);
 
+  useEffect(() => {
+    if (selectedMainCategory) {
+      loadMainCategoryTotals();
+    } else {
+      setMainCategoryDailyTotal(0);
+      setMainCategoryYearlyTotal(0);
+    }
+  }, [selectedMainCategory, date, activeTab]);
+
+  useEffect(() => {
+    if (selectedMainCategory && selectedSubCategory) {
+      loadSubCategoryTotals();
+    } else {
+      setSubCategoryDailyTotal(0);
+      setSubCategoryYearlyTotal(0);
+    }
+  }, [selectedMainCategory, selectedSubCategory, date, activeTab]);
+
   const loadMainCategories = async () => {
     try {
       const result = await window.electronAPI.category.getMainCategories(activeTab);
@@ -42,7 +71,7 @@ function FinanceInputPopup({ isOpen, onClose }) {
         setMainCategories(result.data.map(cat => cat.main_category));
       }
     } catch (error) {
-      console.error("대분류 로드 실패:", error);
+      console.error("항 로드 실패:", error);
     }
   };
 
@@ -57,7 +86,7 @@ function FinanceInputPopup({ isOpen, onClose }) {
         setSubCategories(result.data.map(cat => cat.sub_category).filter(Boolean));
       }
     } catch (error) {
-      console.error("하위 항목 로드 실패:", error);
+      console.error("목 로드 실패:", error);
     }
   };
 
@@ -73,6 +102,14 @@ function FinanceInputPopup({ isOpen, onClose }) {
       }
       if (result.success) {
         setRecords(result.data);
+        // 기록 로드 후 합계도 업데이트
+        await loadAllTotals();
+        if (selectedMainCategory) {
+          await loadMainCategoryTotals();
+        }
+        if (selectedMainCategory && selectedSubCategory) {
+          await loadSubCategoryTotals();
+        }
       }
     } catch (error) {
       console.error("기록 로드 실패:", error);
@@ -81,16 +118,185 @@ function FinanceInputPopup({ isOpen, onClose }) {
     }
   };
 
+  // 항의 합계 계산 (해당 항 하위의 모든 목들의 합계)
+  const loadMainCategoryTotals = async () => {
+    if (!selectedMainCategory) {
+      setMainCategoryDailyTotal(0);
+      setMainCategoryYearlyTotal(0);
+      return;
+    }
+
+    try {
+      // 금일 합계: 해당 날짜의 항 하위 모든 목들의 합계
+      const dailyFilters = { 
+        startDate: date, 
+        endDate: date,
+        main_category: selectedMainCategory
+      };
+      
+      // 총합계: 해당 년도 1월 1일부터 해당 날짜까지의 항 하위 모든 목들의 합계
+      const year = new Date(date).getFullYear();
+      const yearlyFilters = {
+        startDate: `${year}-01-01`,
+        endDate: date,
+        main_category: selectedMainCategory
+      };
+
+      let dailyResult, yearlyResult;
+      if (activeTab === "수입") {
+        dailyResult = await window.electronAPI.finance.getIncomeList(dailyFilters);
+        yearlyResult = await window.electronAPI.finance.getIncomeList(yearlyFilters);
+      } else {
+        dailyResult = await window.electronAPI.finance.getExpenseList(dailyFilters);
+        yearlyResult = await window.electronAPI.finance.getExpenseList(yearlyFilters);
+      }
+
+      if (dailyResult.success) {
+        const dailySum = dailyResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setMainCategoryDailyTotal(dailySum);
+      }
+
+      if (yearlyResult.success) {
+        const yearlySum = yearlyResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setMainCategoryYearlyTotal(yearlySum);
+      }
+    } catch (error) {
+      console.error("항 합계 계산 실패:", error);
+    }
+  };
+
+  // 모든 합계 계산 (금일 수입/지출, 총 수입/지출, 전일까지 수입/지출)
+  const loadAllTotals = async () => {
+    try {
+      const year = new Date(date).getFullYear();
+      const yearStart = `${year}-01-01`;
+      
+      // 전일 날짜 계산
+      const selectedDate = new Date(date);
+      selectedDate.setDate(selectedDate.getDate() - 1);
+      const previousDate = selectedDate.toISOString().split("T")[0];
+      
+      // 금일 수입/지출
+      const dailyIncomeFilters = { startDate: date, endDate: date };
+      const dailyExpenseFilters = { startDate: date, endDate: date };
+      
+      // 총 수입/지출 (1월 1일부터 선택 날짜까지)
+      const yearlyIncomeFilters = { startDate: yearStart, endDate: date };
+      const yearlyExpenseFilters = { startDate: yearStart, endDate: date };
+      
+      // 전일까지 수입/지출 (1월 1일부터 전일까지)
+      const previousIncomeFilters = { startDate: yearStart, endDate: previousDate };
+      const previousExpenseFilters = { startDate: yearStart, endDate: previousDate };
+      
+      const [
+        dailyIncomeResult,
+        dailyExpenseResult,
+        yearlyIncomeResult,
+        yearlyExpenseResult,
+        previousIncomeResult,
+        previousExpenseResult
+      ] = await Promise.all([
+        window.electronAPI.finance.getIncomeList(dailyIncomeFilters),
+        window.electronAPI.finance.getExpenseList(dailyExpenseFilters),
+        window.electronAPI.finance.getIncomeList(yearlyIncomeFilters),
+        window.electronAPI.finance.getExpenseList(yearlyExpenseFilters),
+        window.electronAPI.finance.getIncomeList(previousIncomeFilters),
+        window.electronAPI.finance.getExpenseList(previousExpenseFilters)
+      ]);
+      
+      if (dailyIncomeResult.success) {
+        const total = dailyIncomeResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setDailyIncomeTotal(total);
+      }
+      
+      if (dailyExpenseResult.success) {
+        const total = dailyExpenseResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setDailyExpenseTotal(total);
+      }
+      
+      if (yearlyIncomeResult.success) {
+        const total = yearlyIncomeResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setYearlyIncomeTotal(total);
+      }
+      
+      if (yearlyExpenseResult.success) {
+        const total = yearlyExpenseResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setYearlyExpenseTotal(total);
+      }
+      
+      if (previousIncomeResult.success) {
+        const total = previousIncomeResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setPreviousDayIncomeTotal(total);
+      }
+      
+      if (previousExpenseResult.success) {
+        const total = previousExpenseResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setPreviousDayExpenseTotal(total);
+      }
+    } catch (error) {
+      console.error("전체 합계 계산 실패:", error);
+    }
+  };
+
+  // 목의 합계 계산 (해당 목의 합계)
+  const loadSubCategoryTotals = async () => {
+    if (!selectedMainCategory || !selectedSubCategory) {
+      setSubCategoryDailyTotal(0);
+      setSubCategoryYearlyTotal(0);
+      return;
+    }
+
+    try {
+      // 금일 합계: 해당 날짜의 목 합계
+      const dailyFilters = { 
+        startDate: date, 
+        endDate: date,
+        main_category: selectedMainCategory,
+        sub_category: selectedSubCategory
+      };
+      
+      // 총합계: 해당 년도 1월 1일부터 해당 날짜까지의 목 합계
+      const year = new Date(date).getFullYear();
+      const yearlyFilters = {
+        startDate: `${year}-01-01`,
+        endDate: date,
+        main_category: selectedMainCategory,
+        sub_category: selectedSubCategory
+      };
+
+      let dailyResult, yearlyResult;
+      if (activeTab === "수입") {
+        dailyResult = await window.electronAPI.finance.getIncomeList(dailyFilters);
+        yearlyResult = await window.electronAPI.finance.getIncomeList(yearlyFilters);
+      } else {
+        dailyResult = await window.electronAPI.finance.getExpenseList(dailyFilters);
+        yearlyResult = await window.electronAPI.finance.getExpenseList(yearlyFilters);
+      }
+
+      if (dailyResult.success) {
+        const dailySum = dailyResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setSubCategoryDailyTotal(dailySum);
+      }
+
+      if (yearlyResult.success) {
+        const yearlySum = yearlyResult.data.reduce((sum, record) => sum + record.amount, 0);
+        setSubCategoryYearlyTotal(yearlySum);
+      }
+    } catch (error) {
+      console.error("목 합계 계산 실패:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // 유효성 검사
     if (!selectedMainCategory) {
-      alert("대분류를 선택해주세요.");
+      alert("항를 선택해주세요.");
       return;
     }
     if (!selectedSubCategory) {
-      alert("하위 항목을 선택해주세요.");
+      alert("목을 선택해주세요.");
       return;
     }
     // 수입일 때만 이름1 검증
@@ -118,7 +324,8 @@ function FinanceInputPopup({ isOpen, onClose }) {
         const result = await window.electronAPI.finance.addIncome(data);
         if (result.success) {
           resetFormPartial();
-          loadRecords();
+          await loadRecords();
+          await loadAllTotals();
           // 이름1 필드에 포커스
           setTimeout(() => {
             if (name1InputRef.current) {
@@ -132,7 +339,8 @@ function FinanceInputPopup({ isOpen, onClose }) {
         const result = await window.electronAPI.finance.addExpense(data);
         if (result.success) {
           resetFormPartial();
-          loadRecords();
+          await loadRecords();
+          await loadAllTotals();
         } else {
           alert(result.error || "지출 추가에 실패했습니다.");
         }
@@ -154,7 +362,7 @@ function FinanceInputPopup({ isOpen, onClose }) {
   };
 
   const resetFormPartial = () => {
-    // 대분류, 하위항목은 유지
+    // 항, 하위항목은 유지
     // 이름 필드만 리셋 (무명 체크 해제)
     setIsAnonymous(false);
     setName1("");
@@ -178,7 +386,14 @@ function FinanceInputPopup({ isOpen, onClose }) {
         result = await window.electronAPI.finance.deleteExpense(id);
       }
       if (result.success) {
-        loadRecords();
+        await loadRecords();
+        await loadAllTotals();
+        if (selectedMainCategory) {
+          await loadMainCategoryTotals();
+        }
+        if (selectedMainCategory && selectedSubCategory) {
+          await loadSubCategoryTotals();
+        }
       } else {
         alert("삭제에 실패했습니다.");
       }
@@ -203,7 +418,7 @@ function FinanceInputPopup({ isOpen, onClose }) {
 
     const total = records.reduce((sum, record) => sum + record.amount, 0);
     
-    // 하위 항목별 합계 (모든 항목 포함, sub_category가 없는 경우도 처리)
+    // 목별 합계 (모든 항목 포함, sub_category가 없는 경우도 처리)
     const subCategoryTotals = {};
     records.forEach(record => {
       // sub_category가 null이거나 빈 문자열인 경우 처리
@@ -289,7 +504,14 @@ function FinanceInputPopup({ isOpen, onClose }) {
             </div>
 
             <div className="form-group">
-              <label>대분류</label>
+              <label>
+                항
+                {selectedMainCategory && (
+                  <span className="total-info">
+                    금일 합계: {formatCurrency(mainCategoryDailyTotal)}원 / 총합계: {formatCurrency(mainCategoryYearlyTotal)}원
+                  </span>
+                )}
+              </label>
               <select
                 value={selectedMainCategory}
                 onChange={(e) => {
@@ -308,7 +530,14 @@ function FinanceInputPopup({ isOpen, onClose }) {
             </div>
 
             <div className="form-group">
-              <label>하위 항목</label>
+              <label>
+                목
+                {selectedMainCategory && selectedSubCategory && (
+                  <span className="total-info">
+                    금일 합계: {formatCurrency(subCategoryDailyTotal)}원 / 총합계: {formatCurrency(subCategoryYearlyTotal)}원
+                  </span>
+                )}
+              </label>
               <select
                 value={selectedSubCategory}
                 onChange={(e) => setSelectedSubCategory(e.target.value)}
@@ -404,8 +633,8 @@ function FinanceInputPopup({ isOpen, onClose }) {
             <table className="records-table">
               <thead>
                 <tr>
-                  <th>대분류</th>
-                  <th>하위 항목</th>
+                  <th>항</th>
+                  <th>목</th>
                   {activeTab === "수입" && <th>이름1</th>}
                   {activeTab === "수입" && <th>이름2</th>}
                   <th>금액</th>
@@ -437,35 +666,55 @@ function FinanceInputPopup({ isOpen, onClose }) {
           )}
         </div>
 
-        {activeTab === "수입" && summary && (
-          <div className="summary-section">
+        <div className="summary-section">
+          <div className="summary-left">
             <div className="summary-item">
-              <span className="summary-label">해당 날짜 총 수입 금액:</span>
-              <span className="summary-value">{formatCurrency(summary.total)}원</span>
+              <span className="summary-label">전월 이월금액:</span>
+              <span className="summary-value">{formatCurrency(previousDayIncomeTotal - previousDayExpenseTotal)}원</span>
             </div>
-            {summary.subCategoryList.length > 0 && (
-              <div className="summary-subcategories">
-                <span className="summary-label">항목별 수입: </span>
-                <span className="summary-subcategory-list">
-                  {summary.subCategoryList.map((item, index) => (
-                    <span key={index} className="summary-subcategory-item-inline">
-                      {item.main_category} - {item.sub_category}: {formatCurrency(item.amount)}원
-                      {index < summary.subCategoryList.length - 1 && " / "}
-                    </span>
-                  ))}
-                </span>
-              </div>
-            )}
+            <div className="summary-item">
+              <span className="summary-label">금일 수입금액:</span>
+              <span className="summary-value">{formatCurrency(dailyIncomeTotal)}원</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">금일 지출금액:</span>
+              <span className="summary-value">{formatCurrency(dailyExpenseTotal)}원</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">금일 차액:</span>
+              <span className="summary-value">{formatCurrency(dailyIncomeTotal - dailyExpenseTotal)}원</span>
+            </div>
           </div>
-        )}
+          <div className="summary-right">
+            <div className="summary-item">
+              <span className="summary-label">총 수입금액:</span>
+              <span className="summary-value">{formatCurrency(yearlyIncomeTotal)}원</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">총 지출금액:</span>
+              <span className="summary-value">{formatCurrency(yearlyExpenseTotal)}원</span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">현잔액:</span>
+              <span className="summary-value">{formatCurrency(yearlyIncomeTotal - yearlyExpenseTotal)}원</span>
+            </div>
+          </div>
+        </div>
 
         {editingRecord && (
           <FinanceEditPopup
             record={editingRecord}
             type={activeTab}
-            onClose={() => {
+            onClose={async () => {
               setEditingRecord(null);
-              loadRecords();
+              await loadRecords();
+              await loadAllTotals();
+              if (selectedMainCategory) {
+                await loadMainCategoryTotals();
+              }
+              if (selectedMainCategory && selectedSubCategory) {
+                await loadSubCategoryTotals();
+              }
             }}
           />
         )}
@@ -504,7 +753,7 @@ function FinanceEditPopup({ record, type, onClose }) {
         setMainCategories(result.data.map(cat => cat.main_category));
       }
     } catch (error) {
-      console.error("대분류 로드 실패:", error);
+      console.error("항 로드 실패:", error);
     }
   };
 
@@ -519,7 +768,7 @@ function FinanceEditPopup({ record, type, onClose }) {
         setSubCategories(result.data.map(cat => cat.sub_category).filter(Boolean));
       }
     } catch (error) {
-      console.error("하위 항목 로드 실패:", error);
+      console.error("목 로드 실패:", error);
     }
   };
 
@@ -527,7 +776,7 @@ function FinanceEditPopup({ record, type, onClose }) {
     e.preventDefault();
 
     if (!selectedMainCategory || !selectedSubCategory) {
-      alert("대분류와 하위 항목을 선택해주세요.");
+      alert("항와 목을 선택해주세요.");
       return;
     }
     if (type === "수입" && !isAnonymous && !name1.trim()) {
@@ -607,7 +856,7 @@ function FinanceEditPopup({ record, type, onClose }) {
             </div>
 
             <div className="form-group">
-              <label>대분류</label>
+              <label>항</label>
               <select
                 value={selectedMainCategory}
                 onChange={(e) => {
@@ -626,7 +875,7 @@ function FinanceEditPopup({ record, type, onClose }) {
             </div>
 
             <div className="form-group">
-              <label>하위 항목</label>
+              <label>목</label>
               <select
                 value={selectedSubCategory}
                 onChange={(e) => setSelectedSubCategory(e.target.value)}

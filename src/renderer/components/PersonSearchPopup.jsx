@@ -58,7 +58,7 @@ function PersonSearchPopup({ isOpen, onClose }) {
         const grouped = {};
         
         if (isDetailed) {
-          // 상세 모드: 이름별로 그룹화하고, 대분류/하위항목별로 집계
+          // 상세 모드: 이름별로 그룹화하고, 항/하위항목별로 집계
           result.data.forEach((record) => {
             const name = record.name1 || "(미분류)";
             const key = `${name}|||${record.main_category}|||${record.sub_category || "(미분류)"}`;
@@ -163,7 +163,7 @@ function PersonSearchPopup({ isOpen, onClose }) {
 
   const applySorting = (data) => {
     if (!sortColumn) {
-      // 기본 정렬: 이름별, 대분류별
+      // 기본 정렬: 이름별, 항별
       if (isDetailed) {
         data.sort((a, b) => {
           if (a.name !== b.name) {
@@ -246,7 +246,7 @@ function PersonSearchPopup({ isOpen, onClose }) {
       // CSV 헤더 생성
       const headers = ["이름"];
       if (isDetailed) {
-        headers.push("대분류", "하위 항목");
+        headers.push("항", "목");
       }
       headers.push("총액", "건수");
 
@@ -404,8 +404,8 @@ function PersonSearchPopup({ isOpen, onClose }) {
                 <thead>
                   <tr>
                     <th>날짜</th>
-                    <th>대분류</th>
-                    <th>하위 항목</th>
+                    <th>항</th>
+                    <th>목</th>
                     <th>이름1</th>
                     <th>이름2</th>
                     <th>금액</th>
@@ -444,8 +444,8 @@ function PersonSearchPopup({ isOpen, onClose }) {
                         {sortColumn === "name" ? (sortDirection === "asc" ? "↑" : "↓") : "⇅"}
                       </button>
                     </th>
-                    {isDetailed && <th>대분류</th>}
-                    {isDetailed && <th>하위 항목</th>}
+                    {isDetailed && <th>항</th>}
+                    {isDetailed && <th>목</th>}
                     <th>
                       총액
                       <button 
@@ -460,15 +460,86 @@ function PersonSearchPopup({ isOpen, onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {summaryData.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.name}</td>
-                      {isDetailed && <td>{item.main_category}</td>}
-                      {isDetailed && <td>{item.sub_category}</td>}
-                      <td>{formatCurrency(item.total)}원</td>
-                      <td>{item.count}건</td>
-                    </tr>
-                  ))}
+                  {isDetailed ? (() => {
+                    const rows = [];
+                    let prevMainCategory = null;
+                    let prevSubCategory = null;
+                    let currentSubCategoryGroup = [];
+                    let currentSubCategoryTotal = 0;
+                    let currentSubCategoryCount = 0;
+
+                    summaryData.forEach((item, index) => {
+                      const isFirstInGroup = prevMainCategory !== item.main_category || prevSubCategory !== item.sub_category;
+                      
+                      // 목이 바뀌면 이전 목의 소계 추가
+                      if (isFirstInGroup && currentSubCategoryGroup.length > 0) {
+                        rows.push(
+                          <tr key={`subtotal-${prevSubCategory}-${index}`} className="subtotal-row">
+                            <td colSpan={isDetailed ? 3 : 1} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
+                              소계: {formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: {currentSubCategoryCount}건
+                            </td>
+                            <td style={{ textAlign: "right", fontWeight: "bold" }}>{formatCurrency(currentSubCategoryTotal)}원</td>
+                            <td style={{ textAlign: "center", fontWeight: "bold" }}>{currentSubCategoryCount}건</td>
+                          </tr>
+                        );
+                        currentSubCategoryGroup = [];
+                        currentSubCategoryTotal = 0;
+                        currentSubCategoryCount = 0;
+                      }
+
+                      // 현재 행 추가
+                      rows.push(
+                        <tr key={index}>
+                          <td>{item.name}</td>
+                          {isDetailed && (
+                            <>
+                              <td>{isFirstInGroup ? item.main_category : ""}</td>
+                              <td>{isFirstInGroup ? item.sub_category : ""}</td>
+                            </>
+                          )}
+                          <td>{formatCurrency(item.total)}원</td>
+                          <td>{item.count}건</td>
+                        </tr>
+                      );
+
+                      // 소계 계산
+                      if (isFirstInGroup) {
+                        currentSubCategoryGroup = [item];
+                        currentSubCategoryTotal = item.total;
+                        currentSubCategoryCount = item.count;
+                      } else {
+                        currentSubCategoryGroup.push(item);
+                        currentSubCategoryTotal += item.total;
+                        currentSubCategoryCount += item.count;
+                      }
+
+                      prevMainCategory = item.main_category;
+                      prevSubCategory = item.sub_category;
+                    });
+
+                    // 마지막 목의 소계 추가
+                    if (currentSubCategoryGroup.length > 0) {
+                      rows.push(
+                        <tr key={`subtotal-final`} className="subtotal-row">
+                          <td colSpan={isDetailed ? 3 : 1} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
+                            소계: {formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: {currentSubCategoryCount}건
+                          </td>
+                          <td style={{ textAlign: "right", fontWeight: "bold" }}>{formatCurrency(currentSubCategoryTotal)}원</td>
+                          <td style={{ textAlign: "center", fontWeight: "bold" }}>{currentSubCategoryCount}건</td>
+                        </tr>
+                      );
+                    }
+
+                    return rows;
+                  })() : (
+                    summaryData.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.name}</td>
+                        <td>{formatCurrency(item.total)}원</td>
+                        <td>{item.count}건</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             )
