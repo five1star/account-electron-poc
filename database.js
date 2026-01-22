@@ -181,6 +181,18 @@ function createTables() {
       )
     `);
 
+    // 결제라인 관리 테이블
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS payment_line (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        order_index INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now', 'localtime')),
+        updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(name)
+      )
+    `);
+
     // 인덱스 생성 (조회 성능 향상)
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_income_date ON income(date);
@@ -189,6 +201,7 @@ function createTables() {
       CREATE INDEX IF NOT EXISTS idx_expense_category ON expense(main_category, sub_category);
       CREATE INDEX IF NOT EXISTS idx_category_type ON category(type);
       CREATE INDEX IF NOT EXISTS idx_category_main ON category(main_category);
+      CREATE INDEX IF NOT EXISTS idx_payment_line_order ON payment_line(order_index);
     `);
 
     console.log("Database tables created successfully");

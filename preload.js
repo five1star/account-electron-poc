@@ -29,6 +29,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     delete: (id) => ipcRenderer.invoke("category:delete", id),
   },
 
+  // 결제라인 관리 관련 API
+  paymentLine: {
+    getAll: () => ipcRenderer.invoke("paymentLine:getAll"),
+    add: (data) => ipcRenderer.invoke("paymentLine:add", data),
+    update: (id, data) => ipcRenderer.invoke("paymentLine:update", id, data),
+    delete: (id) => ipcRenderer.invoke("paymentLine:delete", id),
+  },
+
   // 보고서 관련 API
   report: {
     weekly: (startDate, endDate) =>

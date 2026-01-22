@@ -140,6 +140,67 @@ class CategoryService {
         : []
     }));
   }
+
+  // 결제라인 관련 메서드
+  getAllPaymentLines() {
+    const db = this.getDb();
+    const stmt = db.prepare(`
+      SELECT * FROM payment_line 
+      ORDER BY order_index ASC, id ASC
+    `);
+    return stmt.all();
+  }
+
+  addPaymentLine(data) {
+    const db = this.getDb();
+    const stmt = db.prepare(`
+      INSERT INTO payment_line (name, order_index)
+      VALUES (?, ?)
+    `);
+    
+    try {
+      const result = stmt.run(
+        data.name,
+        data.order_index || 0
+      );
+      return { id: result.lastInsertRowid, ...data };
+    } catch (error) {
+      if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        throw new Error("이미 존재하는 결제라인명입니다.");
+      }
+      throw error;
+    }
+  }
+
+  updatePaymentLine(id, data) {
+    const db = this.getDb();
+    const stmt = db.prepare(`
+      UPDATE payment_line 
+      SET name = ?, order_index = ?, updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `);
+    
+    try {
+      const result = stmt.run(
+        data.name,
+        data.order_index || 0,
+        id
+      );
+      return { success: result.changes > 0 };
+    } catch (error) {
+      if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        throw new Error("이미 존재하는 결제라인명입니다.");
+      }
+      throw error;
+    }
+  }
+
+  deletePaymentLine(id) {
+    const db = this.getDb();
+    const stmt = db.prepare("DELETE FROM payment_line WHERE id = ?");
+    const result = stmt.run(id);
+    return { success: result.changes > 0 };
+  }
 }
 
 module.exports = new CategoryService();

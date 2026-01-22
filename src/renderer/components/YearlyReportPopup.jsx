@@ -12,9 +12,16 @@ function YearlyReportPopup({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [paymentLines, setPaymentLines] = useState([]);
+  const [summaryTotals, setSummaryTotals] = useState({
+    incomeTotal: 0,    // 수입금액
+    expenseTotal: 0,  // 지출금액
+    difference: 0      // 차액
+  });
 
   useEffect(() => {
     if (isOpen) {
+      loadPaymentLines();
       // 기본값으로 올해 설정
       const range = calculateYearRange(currentYear);
       setStartDate(range.startDate);
@@ -24,6 +31,17 @@ function YearlyReportPopup({ isOpen, onClose }) {
       }
     }
   }, [isOpen]);
+
+  const loadPaymentLines = async () => {
+    try {
+      const result = await window.electronAPI.paymentLine.getAll();
+      if (result.success) {
+        setPaymentLines(result.data);
+      }
+    } catch (error) {
+      console.error("결제라인 로드 실패:", error);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && selectedYear) {
@@ -103,6 +121,23 @@ function YearlyReportPopup({ isOpen, onClose }) {
           return b.total - a.total;
         });
         setSummaryData(summary);
+
+        // 종합 테이블 데이터 계산 (해당 연도 1월 1일부터 12월 31일까지)
+        const incomeResult = await window.electronAPI.finance.getIncomeList(filters);
+        const expenseResult = await window.electronAPI.finance.getExpenseList(filters);
+        
+        const incomeTotal = incomeResult.success
+          ? incomeResult.data.reduce((sum, r) => sum + r.amount, 0)
+          : 0;
+        const expenseTotal = expenseResult.success
+          ? expenseResult.data.reduce((sum, r) => sum + r.amount, 0)
+          : 0;
+
+        setSummaryTotals({
+          incomeTotal,
+          expenseTotal,
+          difference: incomeTotal - expenseTotal
+        });
       }
     } catch (error) {
       console.error("기록 로드 실패:", error);
@@ -120,6 +155,16 @@ function YearlyReportPopup({ isOpen, onClose }) {
   };
 
 
+  // 결제라인을 정렬하는 함수
+  const getSortedPaymentLines = () => {
+    return [...paymentLines].sort((a, b) => {
+      if (a.order_index !== b.order_index) {
+        return a.order_index - b.order_index;
+      }
+      return a.id - b.id;
+    });
+  };
+
   const handleSavePDF = async () => {
     if (summaryData.length === 0) {
       alert("저장할 데이터가 없습니다.");
@@ -133,15 +178,63 @@ function YearlyReportPopup({ isOpen, onClose }) {
       // 기본 파일명 생성
       const defaultFileName = `연간_${activeTab}_보고서_${selectedYear}.pdf`;
 
-      // HTML 테이블 생성 (항/하위항목/총액)
-      const tableRows = summaryData.map((item) => {
-        return `
+      // 결제라인 테이블 생성 (한 행에 가로로 나열)
+      const sortedPaymentLines = getSortedPaymentLines();
+      const paymentLineLabels = sortedPaymentLines.map((line) => 
+        `<td class="approval-label">${line.name}</td>`
+      ).join("");
+      const paymentLineSignatures = sortedPaymentLines.map(() => 
+        `<td style="height: 60px;"></td>`
+      ).join("");
+      const paymentLineTableRows = `
+        <tr>
+          ${paymentLineLabels}
+        </tr>
+        <tr>
+          ${paymentLineSignatures}
+        </tr>`;
+
+      // HTML 테이블 생성 (항/하위항목/총액) - 항 소계 포함
+      let tableRows = "";
+      let currentCategory = null;
+      let categoryTotal = 0;
+
+      summaryData.forEach((item, index) => {
+        const isNewCategory = currentCategory === null || currentCategory !== item.main_category;
+
+        if (isNewCategory && currentCategory !== null) {
+          // 이전 항의 소계 추가
+          tableRows += `
+            <tr style="background-color: #f0f0f0; font-weight: bold;">
+              <td colspan="2" style="text-align: right;">${currentCategory} 소계</td>
+              <td>${formatCurrency(categoryTotal)}원</td>
+            </tr>`;
+          categoryTotal = 0;
+        }
+
+        if (isNewCategory) {
+          currentCategory = item.main_category;
+        }
+
+        // 현재 항의 데이터 행 추가
+        tableRows += `
           <tr>
             <td>${item.main_category}</td>
             <td>${item.sub_category}</td>
             <td>${formatCurrency(item.total)}원</td>
           </tr>`;
-      }).join("");
+
+        categoryTotal += item.total;
+      });
+
+      // 마지막 항의 소계 추가
+      if (currentCategory !== null) {
+        tableRows += `
+          <tr style="background-color: #f0f0f0; font-weight: bold;">
+            <td colspan="2" style="text-align: right;">${currentCategory} 소계</td>
+            <td>${formatCurrency(categoryTotal)}원</td>
+          </tr>`;
+      }
 
       // 합계 행 추가
       const totalAmount = summaryData.reduce((sum, item) => sum + item.total, 0);
@@ -182,7 +275,6 @@ function YearlyReportPopup({ isOpen, onClose }) {
       padding: 10px;
       border: 1px solid #ddd;
       text-align: center;
-      width: 50%;
     }
     .approval-label {
       font-weight: bold;
@@ -216,15 +308,10 @@ function YearlyReportPopup({ isOpen, onClose }) {
   <p style="text-align: center; font-size: 12pt; margin-bottom: 30px;">(기간 ${dateRange})</p>
   
   <table class="approval-table">
-    <tr>
-      <td class="approval-label">재정부 담당</td>
-      <td class="approval-label">당회장</td>
-    </tr>
-    <tr>
-      <td style="height: 60px;"></td>
-      <td style="height: 60px;"></td>
-    </tr>
+    ${paymentLineTableRows}
   </table>
+  
+  ${summaryTable}
   
   <table>
     <thead>
@@ -367,39 +454,111 @@ function YearlyReportPopup({ isOpen, onClose }) {
             <div className="loading">로딩 중...</div>
           ) : !selectedYear ? (
             <div className="empty-state">연도를 선택해주세요.</div>
-          ) : summaryData.length === 0 ? (
-            <div className="empty-state">등록된 기록이 없습니다.</div>
           ) : (
-            <table className="records-table-history">
-              <thead>
-                <tr>
-                  <th>항</th>
-                  <th>목</th>
-                  <th>총액</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summaryData.map((item, index) => {
-                  const isNewCategory = index === 0 || summaryData[index - 1].main_category !== item.main_category;
-                  return (
-                    <tr 
-                      key={index}
-                      className={isNewCategory ? "category-group-start" : ""}
-                    >
-                      <td>{item.main_category}</td>
-                      <td>{item.sub_category}</td>
-                      <td>{formatCurrency(item.total)}원</td>
+            <>
+              {/* 종합 테이블 */}
+              {summaryData.length > 0 && (
+                <table className="summary-totals-table">
+                  <tbody>
+                    <tr>
+                      <td className="summary-label">수입금액</td>
+                      <td className="summary-value">{formatCurrency(summaryTotals.incomeTotal)}원</td>
+                      <td className="summary-label">지출금액</td>
+                      <td className="summary-value">{formatCurrency(summaryTotals.expenseTotal)}원</td>
+                    </tr>
+                    <tr>
+                      <td className="summary-label">차액</td>
+                      <td className="summary-value" colSpan="3">{formatCurrency(summaryTotals.difference)}원</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+
+              {/* 내역 정리 테이블 */}
+              {summaryData.length === 0 ? (
+                <div className="empty-state">등록된 기록이 없습니다.</div>
+              ) : (
+                <table className="records-table-history">
+                  <thead>
+                    <tr>
+                      <th>항</th>
+                      <th>목</th>
+                      <th>총액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                {(() => {
+                  const rows = [];
+                  let currentCategory = null;
+                  let categoryTotal = 0;
+
+                  summaryData.forEach((item, index) => {
+                    const isNewCategory = currentCategory === null || currentCategory !== item.main_category;
+
+                    if (isNewCategory && currentCategory !== null) {
+                      // 이전 항의 소계 추가
+                      rows.push(
+                        <tr key={`subtotal-${currentCategory}`} className="subtotal-row">
+                          <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>
+                            {currentCategory} 소계
+                          </td>
+                          <td style={{ fontWeight: 600 }}>
+                            {formatCurrency(categoryTotal)}원
+                          </td>
+                        </tr>
+                      );
+                      categoryTotal = 0;
+                    }
+
+                    if (isNewCategory) {
+                      currentCategory = item.main_category;
+                    }
+
+                    // 현재 항의 데이터 행 추가
+                    rows.push(
+                      <tr 
+                        key={index}
+                        className={isNewCategory ? "category-group-start" : ""}
+                      >
+                        <td>{item.main_category}</td>
+                        <td>{item.sub_category}</td>
+                        <td>{formatCurrency(item.total)}원</td>
+                      </tr>
+                    );
+
+                    categoryTotal += item.total;
+                  });
+
+                  // 마지막 항의 소계 추가
+                  if (currentCategory !== null) {
+                    rows.push(
+                      <tr key={`subtotal-${currentCategory}`} className="subtotal-row">
+                        <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>
+                          {currentCategory} 소계
+                        </td>
+                        <td style={{ fontWeight: 600 }}>
+                          {formatCurrency(categoryTotal)}원
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  // 전체 합계 추가
+                  rows.push(
+                    <tr key="total" className="total-row">
+                      <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>합계</td>
+                      <td style={{ fontWeight: 600 }}>
+                        {formatCurrency(summaryData.reduce((sum, item) => sum + item.total, 0))}원
+                      </td>
                     </tr>
                   );
-                })}
-                <tr className="total-row">
-                  <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>합계</td>
-                  <td style={{ fontWeight: 600 }}>
-                    {formatCurrency(summaryData.reduce((sum, item) => sum + item.total, 0))}원
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+
+                  return rows;
+                })()}
+                  </tbody>
+                </table>
+              )}
+            </>
           )}
         </div>
       </div>

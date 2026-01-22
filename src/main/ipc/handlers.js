@@ -172,6 +172,43 @@ function registerIpcHandlers() {
     }
   });
 
+  // 결제라인 관리 관련 핸들러
+  ipcMain.handle("paymentLine:getAll", async (event) => {
+    try {
+      const data = getCategoryService().getAllPaymentLines();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("paymentLine:add", async (event, data) => {
+    try {
+      const result = getCategoryService().addPaymentLine(data);
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("paymentLine:update", async (event, id, data) => {
+    try {
+      const result = getCategoryService().updatePaymentLine(id, data);
+      return { success: result.success };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("paymentLine:delete", async (event, id) => {
+    try {
+      const result = getCategoryService().deletePaymentLine(id);
+      return { success: result.success };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   // 주간 보고서 관련 핸들러
   ipcMain.handle("report:weekly", async (event, startDate, endDate) => {
     try {

@@ -11,12 +11,34 @@ function WeeklyReportPopup({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [paymentLines, setPaymentLines] = useState([]);
+  const [summaryTotals, setSummaryTotals] = useState({
+    carryOver: 0,      // 이월금액
+    incomeTotal: 0,    // 수입금액
+    expenseTotal: 0,  // 지출금액
+    difference: 0      // 차액
+  });
+  const [cumulativeData, setCumulativeData] = useState({}); // 누계 데이터
 
   useEffect(() => {
-    if (isOpen && selectedSunday) {
-      loadRecords();
+    if (isOpen) {
+      loadPaymentLines();
+      if (selectedSunday) {
+        loadRecords();
+      }
     }
   }, [isOpen, activeTab, selectedSunday]);
+
+  const loadPaymentLines = async () => {
+    try {
+      const result = await window.electronAPI.paymentLine.getAll();
+      if (result.success) {
+        setPaymentLines(result.data);
+      }
+    } catch (error) {
+      console.error("결제라인 로드 실패:", error);
+    }
+  };
 
   // 일요일인지 확인하는 함수
   const isSunday = (dateString) => {
@@ -77,32 +99,72 @@ function WeeklyReportPopup({ isOpen, onClose }) {
     
     setLoading(true);
     try {
+      const currentYear = new Date(startDate).getFullYear();
+      const yearStartDate = `${currentYear}-01-01`;
+      
+      // 전날 날짜 계산 (시간대 문제 방지를 위해 문자열 직접 파싱)
+      const [year, month, day] = startDate.split('-').map(Number);
+      const dayBeforeStartDate = new Date(year, month - 1, day - 1);
+      const dayBeforeStartStr = `${dayBeforeStartDate.getFullYear()}-${String(dayBeforeStartDate.getMonth() + 1).padStart(2, '0')}-${String(dayBeforeStartDate.getDate()).padStart(2, '0')}`;
+
+      // 기간 내 데이터 조회
       const filters = { startDate, endDate };
-      let result;
+      let periodResult;
       if (activeTab === "수입") {
-        result = await window.electronAPI.finance.getIncomeList(filters);
+        periodResult = await window.electronAPI.finance.getIncomeList(filters);
       } else {
-        result = await window.electronAPI.finance.getExpenseList(filters);
+        periodResult = await window.electronAPI.finance.getExpenseList(filters);
       }
-      if (result.success) {
-        setRecords(result.data);
-        // 항/하위항목별로 그룹화하여 합계 계산
+
+      // 누계 데이터 조회 (해당 연도 1월 1일부터 주간 종료일까지)
+      const cumulativeFilters = { startDate: yearStartDate, endDate };
+      let cumulativeResult;
+      if (activeTab === "수입") {
+        cumulativeResult = await window.electronAPI.finance.getIncomeList(cumulativeFilters);
+      } else {
+        cumulativeResult = await window.electronAPI.finance.getExpenseList(cumulativeFilters);
+      }
+
+      // 이월금액 계산을 위한 데이터 조회 (해당 연도 1월 1일부터 전날까지)
+      const carryOverFilters = { startDate: yearStartDate, endDate: dayBeforeStartStr };
+      const incomeCarryOverResult = await window.electronAPI.finance.getIncomeList(carryOverFilters);
+      const expenseCarryOverResult = await window.electronAPI.finance.getExpenseList(carryOverFilters);
+
+      if (periodResult.success && cumulativeResult.success && incomeCarryOverResult.success && expenseCarryOverResult.success) {
+        setRecords(periodResult.data);
+        
+        // 기간 내 항/하위항목별로 그룹화하여 합계 계산
         const grouped = {};
-        result.data.forEach((record) => {
+        periodResult.data.forEach((record) => {
           const key = `${record.main_category}|||${record.sub_category || "(미분류)"}`;
           if (!grouped[key]) {
             grouped[key] = {
               main_category: record.main_category,
               sub_category: record.sub_category || "(미분류)",
-              total: 0
+              total: 0,
+              cumulative: 0
             };
           }
           grouped[key].total += record.amount;
         });
-        
+
+        // 누계 데이터 계산
+        const cumulativeGrouped = {};
+        cumulativeResult.data.forEach((record) => {
+          const key = `${record.main_category}|||${record.sub_category || "(미분류)"}`;
+          if (!cumulativeGrouped[key]) {
+            cumulativeGrouped[key] = 0;
+          }
+          cumulativeGrouped[key] += record.amount;
+        });
+
+        // 누계 데이터를 기간 데이터에 추가
+        Object.keys(grouped).forEach((key) => {
+          grouped[key].cumulative = cumulativeGrouped[key] || 0;
+        });
+
         // 배열로 변환하고 항별로 그룹화한 후 총액 순으로 정렬
         const summary = Object.values(grouped);
-        // 항별로 먼저 정렬, 그 다음 총액 순으로 정렬
         summary.sort((a, b) => {
           if (a.main_category !== b.main_category) {
             return a.main_category.localeCompare(b.main_category);
@@ -110,6 +172,29 @@ function WeeklyReportPopup({ isOpen, onClose }) {
           return b.total - a.total;
         });
         setSummaryData(summary);
+
+        // 종합 테이블 데이터 계산
+        const incomeCarryOver = incomeCarryOverResult.data.reduce((sum, r) => sum + r.amount, 0);
+        const expenseCarryOver = expenseCarryOverResult.data.reduce((sum, r) => sum + r.amount, 0);
+        const carryOver = incomeCarryOver - expenseCarryOver;
+
+        // 기간 내 수입/지출 총액 (항상 둘 다 계산)
+        const periodIncomeResult = await window.electronAPI.finance.getIncomeList(filters);
+        const periodExpenseResult = await window.electronAPI.finance.getExpenseList(filters);
+        
+        const incomeTotal = periodIncomeResult.success
+          ? periodIncomeResult.data.reduce((sum, r) => sum + r.amount, 0)
+          : 0;
+        const expenseTotal = periodExpenseResult.success
+          ? periodExpenseResult.data.reduce((sum, r) => sum + r.amount, 0)
+          : 0;
+
+        setSummaryTotals({
+          carryOver,
+          incomeTotal,
+          expenseTotal,
+          difference: incomeTotal - expenseTotal
+        });
       }
     } catch (error) {
       console.error("기록 로드 실패:", error);
@@ -127,6 +212,16 @@ function WeeklyReportPopup({ isOpen, onClose }) {
   };
 
 
+  // 결제라인을 정렬하는 함수
+  const getSortedPaymentLines = () => {
+    return [...paymentLines].sort((a, b) => {
+      if (a.order_index !== b.order_index) {
+        return a.order_index - b.order_index;
+      }
+      return a.id - b.id;
+    });
+  };
+
   const handleSavePDF = async () => {
     if (summaryData.length === 0) {
       alert("저장할 데이터가 없습니다.");
@@ -140,22 +235,97 @@ function WeeklyReportPopup({ isOpen, onClose }) {
       // 기본 파일명 생성
       const defaultFileName = `주간_${activeTab}_보고서_${dateRange.replace(/[~ ]/g, "_")}.pdf`;
 
-      // HTML 테이블 생성 (항/하위항목/총액)
-      const tableRows = summaryData.map((item) => {
-        return `
+      // 결제라인 테이블 생성 (한 행에 가로로 나열)
+      const sortedPaymentLines = getSortedPaymentLines();
+      const paymentLineLabels = sortedPaymentLines.map((line) => 
+        `<td class="approval-label">${line.name}</td>`
+      ).join("");
+      const paymentLineSignatures = sortedPaymentLines.map(() => 
+        `<td style="height: 60px;"></td>`
+      ).join("");
+      const paymentLineTableRows = `
+        <tr>
+          ${paymentLineLabels}
+        </tr>
+        <tr>
+          ${paymentLineSignatures}
+        </tr>`;
+
+      // 종합 테이블 생성
+      const summaryTable = `
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tbody>
+            <tr>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">이월금액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(summaryTotals.carryOver)}원</td>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">수입금액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(summaryTotals.incomeTotal)}원</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">지출금액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(summaryTotals.expenseTotal)}원</td>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">차액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(summaryTotals.difference)}원</td>
+            </tr>
+          </tbody>
+        </table>`;
+
+      // HTML 테이블 생성 (항/하위항목/총액/누계) - 항 소계 포함
+      let tableRows = "";
+      let currentCategory = null;
+      let categoryTotal = 0;
+      let categoryCumulative = 0;
+
+      summaryData.forEach((item, index) => {
+        const isNewCategory = currentCategory === null || currentCategory !== item.main_category;
+
+        if (isNewCategory && currentCategory !== null) {
+          // 이전 항의 소계 추가
+          tableRows += `
+            <tr style="background-color: #f0f0f0; font-weight: bold;">
+              <td colspan="2" style="text-align: right;">${currentCategory} 소계</td>
+              <td>${formatCurrency(categoryTotal)}원</td>
+              <td>${formatCurrency(categoryCumulative)}원</td>
+            </tr>`;
+          categoryTotal = 0;
+          categoryCumulative = 0;
+        }
+
+        if (isNewCategory) {
+          currentCategory = item.main_category;
+        }
+
+        // 현재 항의 데이터 행 추가
+        tableRows += `
           <tr>
             <td>${item.main_category}</td>
             <td>${item.sub_category}</td>
             <td>${formatCurrency(item.total)}원</td>
+            <td>${formatCurrency(item.cumulative)}원</td>
           </tr>`;
-      }).join("");
+
+        categoryTotal += item.total;
+        categoryCumulative += item.cumulative;
+      });
+
+      // 마지막 항의 소계 추가
+      if (currentCategory !== null) {
+        tableRows += `
+          <tr style="background-color: #f0f0f0; font-weight: bold;">
+            <td colspan="2" style="text-align: right;">${currentCategory} 소계</td>
+            <td>${formatCurrency(categoryTotal)}원</td>
+            <td>${formatCurrency(categoryCumulative)}원</td>
+          </tr>`;
+      }
 
       // 합계 행 추가
       const totalAmount = summaryData.reduce((sum, item) => sum + item.total, 0);
+      const cumulativeTotal = summaryData.reduce((sum, item) => sum + item.cumulative, 0);
       const totalRow = `
         <tr style="background-color: #e8f5e9; font-weight: bold;">
           <td colspan="2" style="text-align: right;">합계</td>
           <td>${formatCurrency(totalAmount)}원</td>
+          <td>${formatCurrency(cumulativeTotal)}원</td>
         </tr>`;
 
       const htmlContent = `
@@ -189,7 +359,6 @@ function WeeklyReportPopup({ isOpen, onClose }) {
       padding: 10px;
       border: 1px solid #ddd;
       text-align: center;
-      width: 50%;
     }
     .approval-label {
       font-weight: bold;
@@ -223,15 +392,10 @@ function WeeklyReportPopup({ isOpen, onClose }) {
   <p style="text-align: center; font-size: 12pt; margin-bottom: 30px;">(기간 ${dateRange})</p>
   
   <table class="approval-table">
-    <tr>
-      <td class="approval-label">재정부 담당</td>
-      <td class="approval-label">당회장</td>
-    </tr>
-    <tr>
-      <td style="height: 60px;"></td>
-      <td style="height: 60px;"></td>
-    </tr>
+    ${paymentLineTableRows}
   </table>
+  
+  ${summaryTable}
   
   <table>
     <thead>
@@ -239,6 +403,7 @@ function WeeklyReportPopup({ isOpen, onClose }) {
         <th>항</th>
         <th>목</th>
         <th>총액</th>
+        <th>누계</th>
       </tr>
     </thead>
     <tbody>
@@ -352,39 +517,128 @@ function WeeklyReportPopup({ isOpen, onClose }) {
             <div className="loading">로딩 중...</div>
           ) : !selectedSunday ? (
             <div className="empty-state">주간을 선택해주세요.</div>
-          ) : summaryData.length === 0 ? (
-            <div className="empty-state">등록된 기록이 없습니다.</div>
           ) : (
-            <table className="records-table-history">
-              <thead>
-                <tr>
-                  <th>항</th>
-                  <th>목</th>
-                  <th>총액</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summaryData.map((item, index) => {
-                  const isNewCategory = index === 0 || summaryData[index - 1].main_category !== item.main_category;
-                  return (
-                    <tr 
-                      key={index}
-                      className={isNewCategory ? "category-group-start" : ""}
-                    >
-                      <td>{item.main_category}</td>
-                      <td>{item.sub_category}</td>
-                      <td>{formatCurrency(item.total)}원</td>
+            <>
+              {/* 종합 테이블 */}
+              {summaryData.length > 0 && (
+                <table className="summary-totals-table">
+                  <tbody>
+                    <tr>
+                      <td className="summary-label">이월금액</td>
+                      <td className="summary-value">{formatCurrency(summaryTotals.carryOver)}원</td>
+                      <td className="summary-label">수입금액</td>
+                      <td className="summary-value">{formatCurrency(summaryTotals.incomeTotal)}원</td>
                     </tr>
-                  );
-                })}
-                <tr className="total-row">
-                  <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>합계</td>
-                  <td style={{ fontWeight: 600 }}>
-                    {formatCurrency(summaryData.reduce((sum, item) => sum + item.total, 0))}원
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    <tr>
+                      <td className="summary-label">지출금액</td>
+                      <td className="summary-value">{formatCurrency(summaryTotals.expenseTotal)}원</td>
+                      <td className="summary-label">차액</td>
+                      <td className="summary-value">{formatCurrency(summaryTotals.difference)}원</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+
+              {/* 내역 정리 테이블 */}
+              {summaryData.length === 0 ? (
+                <div className="empty-state">등록된 기록이 없습니다.</div>
+              ) : (
+                <table className="records-table-history">
+                  <thead>
+                    <tr>
+                      <th>항</th>
+                      <th>목</th>
+                      <th>총액</th>
+                      <th>누계</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const rows = [];
+                      let currentCategory = null;
+                      let categoryItems = [];
+                      let categoryTotal = 0;
+                      let categoryCumulative = 0;
+
+                      summaryData.forEach((item, index) => {
+                        const isNewCategory = currentCategory === null || currentCategory !== item.main_category;
+
+                        if (isNewCategory && currentCategory !== null) {
+                          // 이전 항의 소계 추가
+                          rows.push(
+                            <tr key={`subtotal-${currentCategory}`} className="subtotal-row">
+                              <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>
+                                {currentCategory} 소계
+                              </td>
+                              <td style={{ fontWeight: 600 }}>
+                                {formatCurrency(categoryTotal)}원
+                              </td>
+                              <td style={{ fontWeight: 600 }}>
+                                {formatCurrency(categoryCumulative)}원
+                              </td>
+                            </tr>
+                          );
+                          categoryTotal = 0;
+                          categoryCumulative = 0;
+                        }
+
+                        if (isNewCategory) {
+                          currentCategory = item.main_category;
+                        }
+
+                        // 현재 항의 데이터 행 추가
+                        rows.push(
+                          <tr 
+                            key={index}
+                            className={isNewCategory ? "category-group-start" : ""}
+                          >
+                            <td>{item.main_category}</td>
+                            <td>{item.sub_category}</td>
+                            <td>{formatCurrency(item.total)}원</td>
+                            <td>{formatCurrency(item.cumulative)}원</td>
+                          </tr>
+                        );
+
+                        categoryTotal += item.total;
+                        categoryCumulative += item.cumulative;
+                      });
+
+                      // 마지막 항의 소계 추가
+                      if (currentCategory !== null) {
+                        rows.push(
+                          <tr key={`subtotal-${currentCategory}`} className="subtotal-row">
+                            <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>
+                              {currentCategory} 소계
+                            </td>
+                            <td style={{ fontWeight: 600 }}>
+                              {formatCurrency(categoryTotal)}원
+                            </td>
+                            <td style={{ fontWeight: 600 }}>
+                              {formatCurrency(categoryCumulative)}원
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      // 전체 합계 추가
+                      rows.push(
+                        <tr key="total" className="total-row">
+                          <td colSpan="2" style={{ fontWeight: 600, textAlign: "right" }}>합계</td>
+                          <td style={{ fontWeight: 600 }}>
+                            {formatCurrency(summaryData.reduce((sum, item) => sum + item.total, 0))}원
+                          </td>
+                          <td style={{ fontWeight: 600 }}>
+                            {formatCurrency(summaryData.reduce((sum, item) => sum + item.cumulative, 0))}원
+                          </td>
+                        </tr>
+                      );
+
+                      return rows;
+                    })()}
+                  </tbody>
+                </table>
+              )}
+            </>
           )}
         </div>
       </div>

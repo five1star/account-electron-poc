@@ -2,18 +2,26 @@ import React, { useState, useEffect } from "react";
 import "./CategoryManagementPopup.css";
 
 function CategoryManagementPopup({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState("수입"); // "수입" 또는 "지출"
+  const [activeTab, setActiveTab] = useState("수입"); // "수입", "지출", 또는 "결제라인"
   const [categories, setCategories] = useState([]);
+  const [paymentLines, setPaymentLines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingMainCategory, setEditingMainCategory] = useState(null);
   const [editingSubCategory, setEditingSubCategory] = useState(null);
+  const [editingPaymentLine, setEditingPaymentLine] = useState(null);
   const [newMainCategoryName, setNewMainCategoryName] = useState("");
   const [newSubCategoryName, setNewSubCategoryName] = useState("");
   const [selectedMainCategory, setSelectedMainCategory] = useState(null);
+  const [newPaymentLineName, setNewPaymentLineName] = useState("");
+  const [newPaymentLineOrder, setNewPaymentLineOrder] = useState("");
 
   useEffect(() => {
     if (isOpen) {
-      loadCategories();
+      if (activeTab === "결제라인") {
+        loadPaymentLines();
+      } else {
+        loadCategories();
+      }
     }
   }, [isOpen, activeTab]);
 
@@ -27,6 +35,21 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     } catch (error) {
       console.error("항목 로드 실패:", error);
       alert("항목을 불러오는데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPaymentLines = async () => {
+    setLoading(true);
+    try {
+      const result = await window.electronAPI.paymentLine.getAll();
+      if (result.success) {
+        setPaymentLines(result.data);
+      }
+    } catch (error) {
+      console.error("결제라인 로드 실패:", error);
+      alert("결제라인을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -243,6 +266,91 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     }
   };
 
+  const handleAddPaymentLine = async () => {
+    if (!newPaymentLineName.trim()) {
+      alert("결제라인명을 입력해주세요.");
+      return;
+    }
+
+    const order = parseInt(newPaymentLineOrder) || 0;
+
+    try {
+      if (editingPaymentLine) {
+        // 수정 모드
+        const result = await window.electronAPI.paymentLine.update(editingPaymentLine.id, {
+          name: newPaymentLineName.trim(),
+          order_index: order,
+        });
+
+        if (result.success) {
+          setEditingPaymentLine(null);
+          setNewPaymentLineName("");
+          setNewPaymentLineOrder("");
+          loadPaymentLines();
+        } else {
+          alert(result.error || "결제라인 수정에 실패했습니다.");
+        }
+      } else {
+        // 추가 모드
+        const result = await window.electronAPI.paymentLine.add({
+          name: newPaymentLineName.trim(),
+          order_index: order,
+        });
+
+        if (result.success) {
+          setNewPaymentLineName("");
+          setNewPaymentLineOrder("");
+          loadPaymentLines();
+        } else {
+          alert(result.error || "결제라인 추가에 실패했습니다.");
+        }
+      }
+    } catch (error) {
+      console.error("결제라인 처리 실패:", error);
+      alert(editingPaymentLine ? "결제라인 수정에 실패했습니다." : "결제라인 추가에 실패했습니다.");
+    }
+  };
+
+  const handleEditPaymentLineClick = (paymentLine) => {
+    setEditingPaymentLine(paymentLine);
+    setNewPaymentLineName(paymentLine.name);
+    setNewPaymentLineOrder(paymentLine.order_index.toString());
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPaymentLine(null);
+    setNewPaymentLineName("");
+    setNewPaymentLineOrder("");
+  };
+
+  const handleDeletePaymentLine = async (id) => {
+    if (!confirm("이 결제라인을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.paymentLine.delete(id);
+      if (result.success) {
+        loadPaymentLines();
+      } else {
+        alert(result.error || "결제라인 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("결제라인 삭제 실패:", error);
+      alert("결제라인 삭제에 실패했습니다: " + (error.message || error));
+    }
+  };
+
+  // 결제라인을 정렬하는 함수
+  const getSortedPaymentLines = () => {
+    return [...paymentLines].sort((a, b) => {
+      if (a.order_index !== b.order_index) {
+        return a.order_index - b.order_index;
+      }
+      return a.id - b.id;
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -268,23 +376,107 @@ function CategoryManagementPopup({ isOpen, onClose }) {
           >
             지출항목 관리
           </button>
+          <button
+            className={`tab-button ${activeTab === "결제라인" ? "active" : ""}`}
+            onClick={() => setActiveTab("결제라인")}
+          >
+            결제라인 관리
+          </button>
         </div>
 
         <div className="category-management">
-          <div className="add-main-category">
-            <input
-              type="text"
-              value={newMainCategoryName}
-              onChange={(e) => setNewMainCategoryName(e.target.value)}
-              placeholder="항 이름"
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !editingMainCategory) {
-                  handleAddMainCategory();
-                }
-              }}
-            />
-            <button onClick={handleAddMainCategory}>항 추가</button>
-          </div>
+          {activeTab === "결제라인" ? (
+            <>
+              <div className="add-main-category">
+                <input
+                  type="text"
+                  value={newPaymentLineName}
+                  onChange={(e) => setNewPaymentLineName(e.target.value)}
+                  placeholder="결제라인명"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddPaymentLine();
+                    }
+                  }}
+                />
+                <input
+                  type="number"
+                  value={newPaymentLineOrder}
+                  onChange={(e) => setNewPaymentLineOrder(e.target.value)}
+                  placeholder="순서"
+                  style={{ width: "100px" }}
+                />
+                <button onClick={handleAddPaymentLine}>
+                  {editingPaymentLine ? "수정 저장" : "결제라인 추가"}
+                </button>
+                {editingPaymentLine && (
+                  <button onClick={handleCancelEdit}>취소</button>
+                )}
+              </div>
+
+              {loading ? (
+                <div className="loading">로딩 중...</div>
+              ) : (
+                <div className="payment-line-list-container">
+                  <table className="payment-line-list-table">
+                    <thead>
+                      <tr>
+                        <th>결제라인명</th>
+                        <th>순서</th>
+                        <th>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getSortedPaymentLines().map((line) => (
+                        <tr key={line.id}>
+                          <td>{line.name}</td>
+                          <td>{line.order_index}</td>
+                          <td>
+                            <div className="button-group">
+                              <button
+                                onClick={() => handleEditPaymentLineClick(line)}
+                              >
+                                수정
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDeletePaymentLine(line.id)
+                                }
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {paymentLines.length === 0 && (
+                        <tr>
+                          <td colSpan="3" className="empty-state">
+                            등록된 결제라인이 없습니다.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="add-main-category">
+                <input
+                  type="text"
+                  value={newMainCategoryName}
+                  onChange={(e) => setNewMainCategoryName(e.target.value)}
+                  placeholder="항 이름"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !editingMainCategory) {
+                      handleAddMainCategory();
+                    }
+                  }}
+                />
+                <button onClick={handleAddMainCategory}>항 추가</button>
+              </div>
 
           {loading ? (
             <div className="loading">로딩 중...</div>
@@ -460,6 +652,8 @@ function CategoryManagementPopup({ isOpen, onClose }) {
                 ))
               )}
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
