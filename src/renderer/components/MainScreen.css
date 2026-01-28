@@ -1,0 +1,74 @@
+/* 주간 헌금 목록 복사하기 페이지 전용 스타일 */
+
+.weekly-donation-date-input {
+  cursor: pointer;
+  background: white;
+  width: 100%;
+  padding: 1.5rem;
+  font-size: 1.5rem;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.2s;
+  min-height: 60px;
+  zoom: 1.5;
+  /* transform: scale(1.5); */
+  /* transform-origin: left top; */
+}
+
+.weekly-donation-date-input:hover {
+  border-color: #43a047;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.weekly-donation-date-input:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.weekly-donation-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  margin-left: 0.5rem;
+  padding: 0.5rem;
+  width: 32px;
+  height: 32px;
+  background-size: 28px 28px;
+}
+
+.weekly-donation-date-input::-webkit-inner-spin-button,
+.weekly-donation-date-input::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.weekly-donation-date-input[type="date"] {
+  color: #333;
+}
+
+/* 달력 팝업 크기 조절을 위한 추가 스타일 */
+.weekly-donation-date-input::-webkit-datetime-edit {
+  font-size: 1.5rem;
+  padding: 0;
+}
+
+.weekly-donation-date-input::-webkit-datetime-edit-fields-wrapper {
+  font-size: 1.5rem;
+}
+
+.weekly-donation-date-input::-webkit-datetime-edit-text {
+  font-size: 1.5rem;
+  padding: 0 0.25rem;
+}
+
+.weekly-donation-date-input::-webkit-datetime-edit-month-field,
+.weekly-donation-date-input::-webkit-datetime-edit-day-field,
+.weekly-donation-date-input::-webkit-datetime-edit-year-field {
+  font-size: 1.5rem;
+  padding: 0;
+}

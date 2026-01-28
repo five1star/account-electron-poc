@@ -174,25 +174,53 @@ function YearlyReportPopup({ isOpen, onClose }) {
     try {
       // 날짜 범위 문자열 생성
       const dateRange = `${startDate} ~ ${endDate}`;
+      
+      // 출력 일자 (오늘 날짜)
+      const today = new Date();
+      const outputDate = formatDate(today.toISOString().split("T")[0]);
 
       // 기본 파일명 생성
       const defaultFileName = `연간_${activeTab}_보고서_${selectedYear}.pdf`;
 
       // 결제라인 테이블 생성 (한 행에 가로로 나열)
       const sortedPaymentLines = getSortedPaymentLines();
+      const cellWidth = sortedPaymentLines.length > 0 ? `${100 / sortedPaymentLines.length}%` : 'auto';
       const paymentLineLabels = sortedPaymentLines.map((line) => 
-        `<td class="approval-label">${line.name}</td>`
+        `<td class="approval-label" style="width: ${cellWidth};">${line.name}</td>`
       ).join("");
       const paymentLineSignatures = sortedPaymentLines.map(() => 
-        `<td style="height: 60px;"></td>`
+        `<td style="height: 60px; width: ${cellWidth};"></td>`
       ).join("");
-      const paymentLineTableRows = `
-        <tr>
-          ${paymentLineLabels}
-        </tr>
-        <tr>
-          ${paymentLineSignatures}
-        </tr>`;
+      const paymentLineTable = `
+        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+          <tbody>
+            <tr>
+              ${paymentLineLabels}
+            </tr>
+            <tr>
+              ${paymentLineSignatures}
+            </tr>
+          </tbody>
+        </table>`;
+
+      // 종합 테이블 생성 (좌측)
+      const summaryTable = `
+        <table style="width: 100%; border-collapse: collapse;">
+          <tbody>
+            <tr>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">수입금액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(summaryTotals.incomeTotal)}원</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">지출금액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(summaryTotals.expenseTotal)}원</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; text-align: center; border: 1px solid #ddd;">차액</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold;">${formatCurrency(summaryTotals.difference)}원</td>
+            </tr>
+          </tbody>
+        </table>`;
 
       // HTML 테이블 생성 (항/하위항목/총액) - 항 소계 포함
       let tableRows = "";
@@ -262,14 +290,35 @@ function YearlyReportPopup({ isOpen, onClose }) {
     h1 {
       font-size: 18pt;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       text-align: center;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      font-size: 10pt;
+    }
+    .info-left {
+      text-align: left;
+    }
+    .info-right {
+      text-align: right;
+    }
+    .top-section {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .summary-section {
+      flex: 1;
+    }
+    .payment-line-section {
+      flex: 1;
     }
     .approval-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 30px 0;
-      margin-bottom: 40px;
     }
     .approval-table td {
       padding: 10px;
@@ -305,13 +354,19 @@ function YearlyReportPopup({ isOpen, onClose }) {
 </head>
 <body>
   <h1>연간 ${activeTab === "수입" ? "수입" : "지출"} 보고서</h1>
-  <p style="text-align: center; font-size: 12pt; margin-bottom: 30px;">(기간 ${dateRange})</p>
+  <div class="info-row">
+    <div class="info-left">검색 기간: ${dateRange}</div>
+    <div class="info-right">출력 일자: ${outputDate}</div>
+  </div>
   
-  <table class="approval-table">
-    ${paymentLineTableRows}
-  </table>
-  
-  ${summaryTable}
+  <div class="top-section">
+    <div class="summary-section">
+      ${summaryTable}
+    </div>
+    <div class="payment-line-section">
+      ${paymentLineTable}
+    </div>
+  </div>
   
   <table>
     <thead>

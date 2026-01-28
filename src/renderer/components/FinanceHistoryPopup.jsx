@@ -73,17 +73,59 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
 
       // HTML 테이블 생성 (항, 목 중복 제거 및 소계 추가)
       const tableRows = [];
-      let prevMainCategory = null;
-      let prevSubCategory = null;
-      let currentSubCategoryTotal = 0;
-      let currentSubCategoryCount = 0;
+      
+      if (activeTab === "수입") {
+        // 수입 탭: 목 기준 그룹화 (기존 로직)
+        let prevMainCategory = null;
+        let prevSubCategory = null;
+        let currentSubCategoryTotal = 0;
+        let currentSubCategoryCount = 0;
 
-      sortedRecords.forEach((record, index) => {
-        const isFirstInGroup = prevMainCategory !== record.main_category || prevSubCategory !== (record.sub_category || "");
-        
-        // 목이 바뀌면 이전 목의 소계 추가
-        if (isFirstInGroup && prevSubCategory !== null) {
-          const colspan = activeTab === "수입" ? 5 : 3;
+        sortedRecords.forEach((record, index) => {
+          const isFirstInGroup = prevMainCategory !== record.main_category || prevSubCategory !== (record.sub_category || "");
+          
+          // 목이 바뀌면 이전 목의 소계 추가
+          if (isFirstInGroup && prevSubCategory !== null) {
+            const colspan = 5;
+            tableRows.push(
+              `<tr class="subtotal-row">
+                <td colspan="${colspan}" style="text-align: right; font-weight: bold; padding-right: 20px; background-color: #fff3e0;">
+                  소계: ${formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: ${currentSubCategoryCount}건
+                </td>
+                <td style="text-align: right; font-weight: bold; background-color: #fff3e0;">${formatCurrency(currentSubCategoryTotal)}원</td>
+              </tr>`
+            );
+            currentSubCategoryTotal = 0;
+            currentSubCategoryCount = 0;
+          }
+
+          // 현재 행 추가
+          const cells = [
+            `<td>${formatDate(record.date)}</td>`,
+            `<td>${isFirstInGroup ? record.main_category : ""}</td>`,
+            `<td>${isFirstInGroup ? (record.sub_category || "-") : ""}</td>`,
+            `<td>${record.name1 || "-"}</td>`,
+            `<td>${record.name2 || "-"}</td>`,
+            `<td>${formatCurrency(record.amount)}원</td>`
+          ];
+          tableRows.push(`<tr>${cells.join("")}</tr>`);
+
+          // 소계 계산
+          if (isFirstInGroup) {
+            currentSubCategoryTotal = record.amount;
+            currentSubCategoryCount = 1;
+          } else {
+            currentSubCategoryTotal += record.amount;
+            currentSubCategoryCount += 1;
+          }
+
+          prevMainCategory = record.main_category;
+          prevSubCategory = record.sub_category || "";
+        });
+
+        // 마지막 목의 소계 추가
+        if (sortedRecords.length > 0) {
+          const colspan = 5;
           tableRows.push(
             `<tr class="subtotal-row">
               <td colspan="${colspan}" style="text-align: right; font-weight: bold; padding-right: 20px; background-color: #fff3e0;">
@@ -92,46 +134,60 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
               <td style="text-align: right; font-weight: bold; background-color: #fff3e0;">${formatCurrency(currentSubCategoryTotal)}원</td>
             </tr>`
           );
-          currentSubCategoryTotal = 0;
-          currentSubCategoryCount = 0;
         }
+      } else {
+        // 지출 탭: 항 기준 그룹화
+        let prevMainCategory = null;
+        let currentMainCategoryTotal = 0;
+        let currentMainCategoryCount = 0;
 
-        // 현재 행 추가
-        const cells = [
-          `<td>${formatDate(record.date)}</td>`,
-          `<td>${isFirstInGroup ? record.main_category : ""}</td>`,
-          `<td>${isFirstInGroup ? (record.sub_category || "-") : ""}</td>`,
-        ];
-        if (activeTab === "수입") {
-          cells.push(`<td>${record.name1 || "-"}</td>`, `<td>${record.name2 || "-"}</td>`);
+        sortedRecords.forEach((record, index) => {
+          const isFirstInMainCategory = prevMainCategory !== record.main_category;
+          
+          // 항이 바뀌면 이전 항의 소계 추가
+          if (isFirstInMainCategory && prevMainCategory !== null) {
+            const colspan = 3;
+            tableRows.push(
+              `<tr class="subtotal-row">
+                <td colspan="${colspan}" style="text-align: right; font-weight: bold; padding-right: 20px; background-color: #fff3e0;">
+                  소계: ${formatCurrency(currentMainCategoryTotal)}원 / 입력 건수: ${currentMainCategoryCount}건
+                </td>
+                <td style="text-align: right; font-weight: bold; background-color: #fff3e0;">${formatCurrency(currentMainCategoryTotal)}원</td>
+              </tr>`
+            );
+            currentMainCategoryTotal = 0;
+            currentMainCategoryCount = 0;
+          }
+
+          // 현재 행 추가 (항이 같으면 항명은 첫 번째만 표시)
+          const isFirstInGroup = isFirstInMainCategory;
+          const cells = [
+            `<td>${formatDate(record.date)}</td>`,
+            `<td>${isFirstInGroup ? record.main_category : ""}</td>`,
+            `<td>${record.sub_category || "-"}</td>`,
+            `<td>${formatCurrency(record.amount)}원</td>`
+          ];
+          tableRows.push(`<tr>${cells.join("")}</tr>`);
+
+          // 소계 계산
+          currentMainCategoryTotal += record.amount;
+          currentMainCategoryCount += 1;
+
+          prevMainCategory = record.main_category;
+        });
+
+        // 마지막 항의 소계 추가
+        if (sortedRecords.length > 0) {
+          const colspan = 3;
+          tableRows.push(
+            `<tr class="subtotal-row">
+              <td colspan="${colspan}" style="text-align: right; font-weight: bold; padding-right: 20px; background-color: #fff3e0;">
+                소계: ${formatCurrency(currentMainCategoryTotal)}원 / 입력 건수: ${currentMainCategoryCount}건
+              </td>
+              <td style="text-align: right; font-weight: bold; background-color: #fff3e0;">${formatCurrency(currentMainCategoryTotal)}원</td>
+            </tr>`
+          );
         }
-        cells.push(`<td>${formatCurrency(record.amount)}원</td>`);
-        tableRows.push(`<tr>${cells.join("")}</tr>`);
-
-        // 소계 계산
-        if (isFirstInGroup) {
-          currentSubCategoryTotal = record.amount;
-          currentSubCategoryCount = 1;
-        } else {
-          currentSubCategoryTotal += record.amount;
-          currentSubCategoryCount += 1;
-        }
-
-        prevMainCategory = record.main_category;
-        prevSubCategory = record.sub_category || "";
-      });
-
-      // 마지막 목의 소계 추가
-      if (sortedRecords.length > 0) {
-        const colspan = activeTab === "수입" ? 5 : 3;
-        tableRows.push(
-          `<tr class="subtotal-row">
-            <td colspan="${colspan}" style="text-align: right; font-weight: bold; padding-right: 20px; background-color: #fff3e0;">
-              소계: ${formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: ${currentSubCategoryCount}건
-            </td>
-            <td style="text-align: right; font-weight: bold; background-color: #fff3e0;">${formatCurrency(currentSubCategoryTotal)}원</td>
-          </tr>`
-        );
       }
 
       // 총합계 계산
@@ -398,19 +454,64 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
                   });
 
                   const rows = [];
-                  let prevMainCategory = null;
-                  let prevSubCategory = null;
-                  let currentSubCategoryTotal = 0;
-                  let currentSubCategoryCount = 0;
+                  
+                  if (activeTab === "수입") {
+                    // 수입 탭: 목 기준 그룹화 (기존 로직)
+                    let prevMainCategory = null;
+                    let prevSubCategory = null;
+                    let currentSubCategoryTotal = 0;
+                    let currentSubCategoryCount = 0;
 
-                  sortedRecords.forEach((record, index) => {
-                    const isFirstInGroup = prevMainCategory !== record.main_category || prevSubCategory !== (record.sub_category || "");
-                    
-                    // 목이 바뀌면 이전 목의 소계 추가
-                    if (isFirstInGroup && prevSubCategory !== null) {
-                      const colspan = activeTab === "수입" ? 5 : 3;
+                    sortedRecords.forEach((record, index) => {
+                      const isFirstInGroup = prevMainCategory !== record.main_category || prevSubCategory !== (record.sub_category || "");
+                      
+                      // 목이 바뀌면 이전 목의 소계 추가
+                      if (isFirstInGroup && prevSubCategory !== null) {
+                        const colspan = 5;
+                        rows.push(
+                          <tr key={`subtotal-${prevSubCategory}-${index}`} className="subtotal-row">
+                            <td colSpan={colspan} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
+                              소계: {formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: {currentSubCategoryCount}건
+                            </td>
+                            <td style={{ textAlign: "right", fontWeight: "bold" }}>{formatCurrency(currentSubCategoryTotal)}원</td>
+                            <td></td>
+                          </tr>
+                        );
+                        currentSubCategoryTotal = 0;
+                        currentSubCategoryCount = 0;
+                      }
+
+                      // 현재 행 추가
                       rows.push(
-                        <tr key={`subtotal-${prevSubCategory}-${index}`} className="subtotal-row">
+                        <tr key={record.id} onDoubleClick={() => handleEdit(record)}>
+                          <td>{formatDate(record.date)}</td>
+                          <td>{isFirstInGroup ? record.main_category : ""}</td>
+                          <td>{isFirstInGroup ? (record.sub_category || "-") : ""}</td>
+                          <td>{record.name1}</td>
+                          <td>{record.name2 || "-"}</td>
+                          <td>{formatCurrency(record.amount)}원</td>
+                          <td>{record.memo || "-"}</td>
+                        </tr>
+                      );
+
+                      // 소계 계산
+                      if (isFirstInGroup) {
+                        currentSubCategoryTotal = record.amount;
+                        currentSubCategoryCount = 1;
+                      } else {
+                        currentSubCategoryTotal += record.amount;
+                        currentSubCategoryCount += 1;
+                      }
+
+                      prevMainCategory = record.main_category;
+                      prevSubCategory = record.sub_category || "";
+                    });
+
+                    // 마지막 목의 소계 추가
+                    if (sortedRecords.length > 0) {
+                      const colspan = 5;
+                      rows.push(
+                        <tr key="subtotal-final" className="subtotal-row">
                           <td colSpan={colspan} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
                             소계: {formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: {currentSubCategoryCount}건
                           </td>
@@ -418,48 +519,64 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
                           <td></td>
                         </tr>
                       );
-                      currentSubCategoryTotal = 0;
-                      currentSubCategoryCount = 0;
                     }
+                  } else {
+                    // 지출 탭: 항 기준 그룹화
+                    let prevMainCategory = null;
+                    let currentMainCategoryTotal = 0;
+                    let currentMainCategoryCount = 0;
 
-                    // 현재 행 추가
-                    rows.push(
-                      <tr key={record.id} onDoubleClick={() => handleEdit(record)}>
-                        <td>{formatDate(record.date)}</td>
-                        <td>{isFirstInGroup ? record.main_category : ""}</td>
-                        <td>{isFirstInGroup ? (record.sub_category || "-") : ""}</td>
-                        {activeTab === "수입" && <td>{record.name1}</td>}
-                        {activeTab === "수입" && <td>{record.name2 || "-"}</td>}
-                        <td>{formatCurrency(record.amount)}원</td>
-                        <td>{record.memo || "-"}</td>
-                      </tr>
-                    );
+                    sortedRecords.forEach((record, index) => {
+                      const isFirstInMainCategory = prevMainCategory !== record.main_category;
+                      
+                      // 항이 바뀌면 이전 항의 소계 추가
+                      if (isFirstInMainCategory && prevMainCategory !== null) {
+                        const colspan = 3;
+                        rows.push(
+                          <tr key={`subtotal-${prevMainCategory}-${index}`} className="subtotal-row">
+                            <td colSpan={colspan} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
+                              소계: {formatCurrency(currentMainCategoryTotal)}원 / 입력 건수: {currentMainCategoryCount}건
+                            </td>
+                            <td style={{ textAlign: "right", fontWeight: "bold" }}>{formatCurrency(currentMainCategoryTotal)}원</td>
+                            <td></td>
+                          </tr>
+                        );
+                        currentMainCategoryTotal = 0;
+                        currentMainCategoryCount = 0;
+                      }
 
-                    // 소계 계산
-                    if (isFirstInGroup) {
-                      currentSubCategoryTotal = record.amount;
-                      currentSubCategoryCount = 1;
-                    } else {
-                      currentSubCategoryTotal += record.amount;
-                      currentSubCategoryCount += 1;
+                      // 현재 행 추가 (항이 같으면 항명은 첫 번째만 표시)
+                      const isFirstInGroup = isFirstInMainCategory;
+                      rows.push(
+                        <tr key={record.id} onDoubleClick={() => handleEdit(record)}>
+                          <td>{formatDate(record.date)}</td>
+                          <td>{isFirstInGroup ? record.main_category : ""}</td>
+                          <td>{record.sub_category || "-"}</td>
+                          <td>{formatCurrency(record.amount)}원</td>
+                          <td>{record.memo || "-"}</td>
+                        </tr>
+                      );
+
+                      // 소계 계산
+                      currentMainCategoryTotal += record.amount;
+                      currentMainCategoryCount += 1;
+
+                      prevMainCategory = record.main_category;
+                    });
+
+                    // 마지막 항의 소계 추가
+                    if (sortedRecords.length > 0) {
+                      const colspan = 3;
+                      rows.push(
+                        <tr key="subtotal-final" className="subtotal-row">
+                          <td colSpan={colspan} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
+                            소계: {formatCurrency(currentMainCategoryTotal)}원 / 입력 건수: {currentMainCategoryCount}건
+                          </td>
+                          <td style={{ textAlign: "right", fontWeight: "bold" }}>{formatCurrency(currentMainCategoryTotal)}원</td>
+                          <td></td>
+                        </tr>
+                      );
                     }
-
-                    prevMainCategory = record.main_category;
-                    prevSubCategory = record.sub_category || "";
-                  });
-
-                  // 마지막 목의 소계 추가
-                  if (sortedRecords.length > 0) {
-                    const colspan = activeTab === "수입" ? 5 : 3;
-                    rows.push(
-                      <tr key="subtotal-final" className="subtotal-row">
-                        <td colSpan={colspan} style={{ textAlign: "right", fontWeight: "bold", paddingRight: "20px" }}>
-                          소계: {formatCurrency(currentSubCategoryTotal)}원 / 입력 건수: {currentSubCategoryCount}건
-                        </td>
-                        <td style={{ textAlign: "right", fontWeight: "bold" }}>{formatCurrency(currentSubCategoryTotal)}원</td>
-                        <td></td>
-                      </tr>
-                    );
                   }
 
                   // 총합계 계산

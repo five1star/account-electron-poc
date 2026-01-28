@@ -266,7 +266,7 @@
 }
 
 .records-section {
-  padding: 1rem 1.5rem;
+  padding: 0px 1rem 1.5rem;
   flex: 1;
   min-height: 300px;
   max-height: 400px;

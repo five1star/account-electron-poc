@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./CategoryManagementPopup.css";
 
 function CategoryManagementPopup({ isOpen, onClose }) {
@@ -14,6 +14,8 @@ function CategoryManagementPopup({ isOpen, onClose }) {
   const [selectedMainCategory, setSelectedMainCategory] = useState(null);
   const [newPaymentLineName, setNewPaymentLineName] = useState("");
   const [newPaymentLineOrder, setNewPaymentLineOrder] = useState("");
+  const categoryManagementRef = useRef(null);
+  const scrollPositionRef = useRef(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -25,12 +27,20 @@ function CategoryManagementPopup({ isOpen, onClose }) {
     }
   }, [isOpen, activeTab]);
 
-  const loadCategories = async () => {
+  const loadCategories = async (preserveScroll = false) => {
     setLoading(true);
     try {
       const result = await window.electronAPI.category.getHierarchy(activeTab);
       if (result.success) {
         setCategories(result.data);
+        // 스크롤 위치 복원
+        if (preserveScroll && categoryManagementRef.current) {
+          setTimeout(() => {
+            if (categoryManagementRef.current) {
+              categoryManagementRef.current.scrollTop = scrollPositionRef.current;
+            }
+          }, 0);
+        }
       }
     } catch (error) {
       console.error("항목 로드 실패:", error);
@@ -170,6 +180,11 @@ function CategoryManagementPopup({ isOpen, onClose }) {
       return;
     }
 
+    // 스크롤 위치 저장
+    if (categoryManagementRef.current) {
+      scrollPositionRef.current = categoryManagementRef.current.scrollTop;
+    }
+
     try {
       const result = await window.electronAPI.category.add({
         type: activeTab,
@@ -180,7 +195,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
       if (result.success) {
         setNewSubCategoryName("");
         setSelectedMainCategory(null);
-        loadCategories();
+        loadCategories(true); // 스크롤 위치 보존
       } else {
         alert(result.error || "목 추가에 실패했습니다.");
       }
@@ -384,7 +399,7 @@ function CategoryManagementPopup({ isOpen, onClose }) {
           </button>
         </div>
 
-        <div className="category-management">
+        <div className="category-management" ref={categoryManagementRef}>
           {activeTab === "결제라인" ? (
             <>
               <div className="add-main-category">
