@@ -62,5 +62,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getDbInfo: () => ipcRenderer.invoke("settings:getDbInfo"),
     backupDatabase: () => ipcRenderer.invoke("settings:backupDatabase"),
     restoreDatabase: () => ipcRenderer.invoke("settings:restoreDatabase"),
+    resetAll: () => ipcRenderer.invoke("settings:resetAll"),
+    resetIncomeExpense: () => ipcRenderer.invoke("settings:resetIncomeExpense"),
   },
 });

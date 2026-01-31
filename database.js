@@ -242,8 +242,16 @@ function closeDatabase() {
   }
 }
 
+function recreateTables() {
+  if (!db) {
+    throw new Error("Database is not initialized");
+  }
+  createTables();
+}
+
 module.exports = {
   initDatabase,
   getDatabase,
   closeDatabase,
+  recreateTables,
 };

@@ -37,7 +37,8 @@
 }
 
 .settings-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
@@ -45,8 +46,9 @@
 }
 
 .backup-button,
-.restore-button {
-  flex: 1;
+.restore-button,
+.reset-all-button,
+.reset-income-expense-button {
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -54,32 +56,23 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.backup-button {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
-  color: white;
-}
-
-.backup-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-  background: linear-gradient(135deg, #43a047 0%, #66bb6a 50%, #81c784 100%);
-}
-
-.restore-button {
   background: linear-gradient(135deg, #2196f3 0%, #42a5f5 50%, #64b5f6 100%);
   color: white;
 }
 
-.restore-button:hover:not(:disabled) {
+.backup-button:hover:not(:disabled),
+.restore-button:hover:not(:disabled),
+.reset-all-button:hover:not(:disabled),
+.reset-income-expense-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
   background: linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #64b5f6 100%);
 }
 
 .backup-button:disabled,
-.restore-button:disabled {
+.restore-button:disabled,
+.reset-all-button:disabled,
+.reset-income-expense-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

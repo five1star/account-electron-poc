@@ -95,6 +95,54 @@ function SettingsPopup({ isOpen, onClose }) {
     }
   };
 
+  const handleResetAll = async () => {
+    if (!confirm("데이터베이스를 전체 초기화하시겠습니까? 모든 데이터(수입, 지출, 항목, 결제라인)가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")) {
+      return;
+    }
+
+    if (!confirm("정말로 전체 초기화를 진행하시겠습니까? 모든 데이터가 영구적으로 삭제됩니다.")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await window.electronAPI.settings.resetAll();
+      if (result.success) {
+        alert("전체 초기화가 완료되었습니다. 애플리케이션을 재시작해주세요.");
+        await loadDbInfo();
+      } else {
+        alert(result.error || "전체 초기화에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("전체 초기화 실패:", error);
+      alert("전체 초기화에 실패했습니다: " + (error.message || error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetIncomeExpense = async () => {
+    if (!confirm("입출력 데이터를 초기화하시겠습니까? 수입과 지출 데이터만 삭제되고 항목과 결제라인은 유지됩니다. 이 작업은 되돌릴 수 없습니다.")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await window.electronAPI.settings.resetIncomeExpense();
+      if (result.success) {
+        alert("입출력 초기화가 완료되었습니다.");
+        await loadDbInfo();
+      } else {
+        alert(result.error || "입출력 초기화에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("입출력 초기화 실패:", error);
+      alert("입출력 초기화에 실패했습니다: " + (error.message || error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -154,14 +202,28 @@ function SettingsPopup({ isOpen, onClose }) {
               onClick={handleBackup}
               disabled={loading}
             >
-              백업
+              DB 백업하기
             </button>
             <button 
               className="restore-button" 
               onClick={handleRestore}
               disabled={loading}
             >
-              DB 복구
+              DB 불러오기
+            </button>
+            <button 
+              className="reset-all-button" 
+              onClick={handleResetAll}
+              disabled={loading}
+            >
+              전체 초기화
+            </button>
+            <button 
+              className="reset-income-expense-button" 
+              onClick={handleResetIncomeExpense}
+              disabled={loading}
+            >
+              입출력 초기화
             </button>
           </div>
         </div>

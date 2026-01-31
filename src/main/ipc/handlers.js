@@ -542,6 +542,49 @@ function registerIpcHandlers() {
       return { success: false, error: error.message };
     }
   });
+
+  // 전체 초기화 핸들러
+  ipcMain.handle("settings:resetAll", async (event) => {
+    try {
+      const { getDatabase, recreateTables } = require("../../../database");
+      const db = getDatabase();
+      
+      // 모든 테이블 삭제
+      db.exec(`
+        DROP TABLE IF EXISTS income;
+        DROP TABLE IF EXISTS expense;
+        DROP TABLE IF EXISTS category;
+        DROP TABLE IF EXISTS payment_line;
+      `);
+      
+      // 테이블 재생성
+      recreateTables();
+      
+      return { success: true };
+    } catch (error) {
+      console.error("전체 초기화 실패:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // 입출력 초기화 핸들러
+  ipcMain.handle("settings:resetIncomeExpense", async (event) => {
+    try {
+      const { getDatabase } = require("../../../database");
+      const db = getDatabase();
+      
+      // 수입과 지출 테이블만 삭제
+      db.exec(`
+        DELETE FROM income;
+        DELETE FROM expense;
+      `);
+      
+      return { success: true };
+    } catch (error) {
+      console.error("입출력 초기화 실패:", error);
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 module.exports = {
