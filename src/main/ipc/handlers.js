@@ -336,21 +336,114 @@ function registerIpcHandlers() {
       const dbPath = path.join(userDataPath, "finance.db");
       const fileName = path.basename(dbPath);
       
+      console.log("DB 정보 조회 시작:");
+      console.log("  - userDataPath:", userDataPath);
+      console.log("  - dbPath:", dbPath);
+      console.log("  - 파일 존재 여부:", fs.existsSync(dbPath));
+      
       let lastUpdated = null;
       if (fs.existsSync(dbPath)) {
         const stats = fs.statSync(dbPath);
         lastUpdated = stats.mtime;
+        console.log("  - 파일 수정 시간:", lastUpdated);
       }
+      
+      // 수입과 지출의 최신 날짜 조회
+      let latestIncomeDate = null;
+      let latestExpenseDate = null;
+      
+      try {
+        const { getDatabase } = require("../../../database");
+        const db = getDatabase();
+        
+        if (!db) {
+          console.error("데이터베이스 객체를 가져올 수 없습니다.");
+        } else {
+          console.log("데이터베이스 연결 성공");
+          
+          // 수입 데이터 존재 확인 및 최신 날짜 조회
+          try {
+            // 먼저 테이블이 존재하는지 확인
+            const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='income'").get();
+            console.log("수입 테이블 존재 여부:", tableCheck);
+            
+            const incomeCountResult = db.prepare("SELECT COUNT(*) as count FROM income").get();
+            console.log("수입 데이터 개수:", incomeCountResult);
+            console.log("수입 데이터 개수 값:", incomeCountResult?.count);
+            
+            if (incomeCountResult && incomeCountResult.count > 0) {
+              const incomeResult = db.prepare("SELECT MAX(date) as max_date FROM income").get();
+              console.log("수입 최신 날짜 조회 결과:", incomeResult);
+              console.log("수입 최신 날짜 값:", incomeResult?.max_date);
+              console.log("수입 최신 날짜 타입:", typeof incomeResult?.max_date);
+              
+              if (incomeResult && incomeResult.max_date) {
+                latestIncomeDate = String(incomeResult.max_date);
+                console.log("수입 최신 날짜 설정됨:", latestIncomeDate);
+              } else {
+                console.log("수입 최신 날짜가 null이거나 undefined입니다.");
+              }
+            } else {
+              console.log("수입 데이터가 없습니다.");
+            }
+          } catch (incomeError) {
+            console.error("수입 데이터 조회 오류:", incomeError);
+            console.error("수입 데이터 조회 오류 스택:", incomeError.stack);
+          }
+          
+          // 지출 데이터 존재 확인 및 최신 날짜 조회
+          try {
+            // 먼저 테이블이 존재하는지 확인
+            const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='expense'").get();
+            console.log("지출 테이블 존재 여부:", tableCheck);
+            
+            const expenseCountResult = db.prepare("SELECT COUNT(*) as count FROM expense").get();
+            console.log("지출 데이터 개수:", expenseCountResult);
+            console.log("지출 데이터 개수 값:", expenseCountResult?.count);
+            
+            if (expenseCountResult && expenseCountResult.count > 0) {
+              const expenseResult = db.prepare("SELECT MAX(date) as max_date FROM expense").get();
+              console.log("지출 최신 날짜 조회 결과:", expenseResult);
+              console.log("지출 최신 날짜 값:", expenseResult?.max_date);
+              console.log("지출 최신 날짜 타입:", typeof expenseResult?.max_date);
+              
+              if (expenseResult && expenseResult.max_date) {
+                latestExpenseDate = String(expenseResult.max_date);
+                console.log("지출 최신 날짜 설정됨:", latestExpenseDate);
+              } else {
+                console.log("지출 최신 날짜가 null이거나 undefined입니다.");
+              }
+            } else {
+              console.log("지출 데이터가 없습니다.");
+            }
+          } catch (expenseError) {
+            console.error("지출 데이터 조회 오류:", expenseError);
+            console.error("지출 데이터 조회 오류 스택:", expenseError.stack);
+          }
+        }
+      } catch (dbError) {
+        console.error("DB 조회 오류:", dbError);
+        console.error("에러 스택:", dbError.stack);
+        // DB 조회 실패해도 계속 진행
+      }
+      
+      const resultData = {
+        fileName: fileName,
+        filePath: dbPath,
+        lastUpdated: lastUpdated,
+        latestIncomeDate: latestIncomeDate,
+        latestExpenseDate: latestExpenseDate,
+      };
+      
+      console.log("최종 반환 데이터:", resultData);
       
       return {
         success: true,
-        data: {
-          fileName: fileName,
-          filePath: dbPath,
-          lastUpdated: lastUpdated,
-        },
+        data: resultData,
       };
     } catch (error) {
+      console.error("settings:getDbInfo 전체 오류:", error);
+      console.error("에러 스택:", error.stack);
       return { success: false, error: error.message };
     }
   });

@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import "./SettingsPopup.css";
 
 function SettingsPopup({ isOpen, onClose }) {
-  const [dbInfo, setDbInfo] = useState({ fileName: "", filePath: "", lastUpdated: null });
+  const [dbInfo, setDbInfo] = useState({ 
+    fileName: "", 
+    filePath: "", 
+    lastUpdated: null,
+    latestIncomeDate: null,
+    latestExpenseDate: null
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -13,12 +19,38 @@ function SettingsPopup({ isOpen, onClose }) {
 
   const loadDbInfo = async () => {
     try {
+      console.log("설정 팝업 - DB 정보 로드 시작");
       const result = await window.electronAPI.settings.getDbInfo();
+      console.log("설정 팝업 - DB 정보 로드 결과:", result);
+      console.log("설정 팝업 - result.success:", result.success);
+      console.log("설정 팝업 - result.data:", result.data);
+      console.log("설정 팝업 - result.error:", result.error);
+      
       if (result.success) {
-        setDbInfo(result.data);
+        console.log("설정 팝업 - DB 정보 데이터:", result.data);
+        console.log("설정 팝업 - latestIncomeDate:", result.data?.latestIncomeDate);
+        console.log("설정 팝업 - latestExpenseDate:", result.data?.latestExpenseDate);
+        console.log("설정 팝업 - latestIncomeDate 타입:", typeof result.data?.latestIncomeDate);
+        console.log("설정 팝업 - latestExpenseDate 타입:", typeof result.data?.latestExpenseDate);
+        
+        const dbInfoData = {
+          fileName: result.data?.fileName || "",
+          filePath: result.data?.filePath || "",
+          lastUpdated: result.data?.lastUpdated || null,
+          latestIncomeDate: result.data?.latestIncomeDate || null,
+          latestExpenseDate: result.data?.latestExpenseDate || null
+        };
+        
+        console.log("설정 팝업 - 설정할 dbInfoData:", dbInfoData);
+        setDbInfo(dbInfoData);
+      } else {
+        console.error("설정 팝업 - DB 정보 로드 실패:", result.error);
+        alert("DB 정보를 불러오는데 실패했습니다: " + (result.error || "알 수 없는 오류"));
       }
     } catch (error) {
       console.error("DB 정보 로드 실패:", error);
+      console.error("에러 스택:", error.stack);
+      alert("DB 정보를 불러오는데 실패했습니다: " + error.message);
     }
   };
 
@@ -85,7 +117,7 @@ function SettingsPopup({ isOpen, onClose }) {
           </div>
 
           <div className="setting-item">
-            <label>Last updated:</label>
+            <label>최근 수정일:</label>
             <div className="setting-value">
               {dbInfo.lastUpdated 
                 ? new Date(dbInfo.lastUpdated).toLocaleString("ko-KR", {
@@ -97,6 +129,22 @@ function SettingsPopup({ isOpen, onClose }) {
                     second: "2-digit",
                   })
                 : "-"}
+            </div>
+          </div>
+
+          <div className="setting-item">
+            <label>마지막 저장일:</label>
+            <div className="setting-value" style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div>
+                수입: {dbInfo.latestIncomeDate && dbInfo.latestIncomeDate !== null && dbInfo.latestIncomeDate !== undefined 
+                  ? dbInfo.latestIncomeDate 
+                  : "-"}
+              </div>
+              <div>
+                지출: {dbInfo.latestExpenseDate && dbInfo.latestExpenseDate !== null && dbInfo.latestExpenseDate !== undefined 
+                  ? dbInfo.latestExpenseDate 
+                  : "-"}
+              </div>
             </div>
           </div>
 

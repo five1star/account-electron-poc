@@ -118,7 +118,7 @@ function MainScreen() {
           className="menu-button"
           onClick={handleCopyWeeklyDonationList}
         >
-          주간 헌금 목록 복사하기
+          헌금 명단 조회
         </button>
       </div>
 
@@ -152,7 +152,7 @@ function MainScreen() {
         onClose={() => setIsPersonSearchOpen(false)}
       />
 
-      {/* 주간 헌금 목록 복사 팝업 */}
+      {/* 헌금 명단 조회 팝업 */}
       {isWeeklyDonationCopyOpen && (
         <WeeklyDonationCopyPopup
           isOpen={isWeeklyDonationCopyOpen}
@@ -163,7 +163,7 @@ function MainScreen() {
   );
 }
 
-// 주간 헌금 목록 복사 팝업 컴포넌트
+// 헌금 명단 조회 팝업 컴포넌트
 function WeeklyDonationCopyPopup({ isOpen, onClose }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
@@ -237,7 +237,13 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
       const namePriority = {
         '오황동': 1,
         '최경숙': 2,
-        '오한별': 3
+        '오한별': 3,
+        '정종선': 4,
+        '정호창': 5,
+        '김형준': 6,
+        '장태진': 7,
+        '최기식': 8,
+        '김연근': 9
       };
 
       // 목별로 이름 중복 제거 및 정렬
@@ -248,11 +254,11 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
           nameSet.add(item.nameDisplay);
         });
         
-        // 이름 정렬: 우선순위가 있는 이름 먼저, 그 다음 알파벳 순
+        // 이름 정렬: 우선순위가 있는 이름 먼저, 그 다음 가나다순
         const nameArray = Array.from(nameSet).sort((a, b) => {
           // 이름1 추출 (괄호 앞부분)
-          const name1A = a.split('(')[0];
-          const name1B = b.split('(')[0];
+          const name1A = a.split('(')[0].trim();
+          const name1B = b.split('(')[0].trim();
           
           const priorityA = namePriority[name1A] || 999;
           const priorityB = namePriority[name1B] || 999;
@@ -261,8 +267,8 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
             return priorityA - priorityB;
           }
           
-          // 우선순위가 같으면 알파벳 순
-          return a.localeCompare(b);
+          // 우선순위가 같으면 가나다순
+          return a.localeCompare(b, 'ko');
         });
         
         processedData[subCategory] = nameArray;
@@ -308,7 +314,6 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
     try {
       await navigator.clipboard.writeText(donationData.text);
       alert("헌금 목록이 클립보드에 복사되었습니다.");
-      onClose();
     } catch (error) {
       console.error("클립보드 복사 실패:", error);
       alert("클립보드 복사에 실패했습니다: " + error.message);
@@ -321,7 +326,7 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
     <div className="popup-overlay" onClick={onClose}>
       <div className="popup-content history-popup" onClick={(e) => e.stopPropagation()}>
         <div className="popup-header">
-          <h2>주간 헌금 목록 복사하기</h2>
+          <h2>헌금 명단 조회</h2>
           <div className="header-right">
             {donationData && (
               <button className="csv-save-button" onClick={handleCopy}>
@@ -358,7 +363,7 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
             <div className="empty-state">{error}</div>
           ) : donationData ? (
             <div style={{ padding: "1rem" }}>
-              <div style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "0.875rem", lineHeight: "1.8" }}>
+              <div className="weekly-donation-text" style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", lineHeight: "1.8" }}>
                 {donationData.text}
               </div>
             </div>

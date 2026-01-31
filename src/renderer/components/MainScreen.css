@@ -1,4 +1,4 @@
-/* 주간 헌금 목록 복사하기 페이지 전용 스타일 */
+/* 헌금 명단 조회 페이지 전용 스타일 */
 
 .weekly-donation-date-input {
   cursor: pointer;
@@ -71,4 +71,8 @@
 .weekly-donation-date-input::-webkit-datetime-edit-year-field {
   font-size: 1.5rem;
   padding: 0;
+}
+
+.weekly-donation-text {
+  font-size: 1.125rem;
 }
