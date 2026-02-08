@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 import "./FinanceInputPopup.css";
 import { formatCurrency } from "../utils/formatCurrency";
+import DatePickerPopup from "./DatePickerPopup";
 
 function WeeklyReportPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("수입"); // "수입" 또는 "지출"
@@ -20,6 +21,7 @@ function WeeklyReportPopup({ isOpen, onClose }) {
     closingBalance: 0  // 마감잔액 (차액 + 이월금액)
   });
   const [cumulativeData, setCumulativeData] = useState({}); // 누계 데이터
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,9 +71,7 @@ function WeeklyReportPopup({ isOpen, onClose }) {
     };
   };
 
-  const handleDateChange = (e) => {
-    const selectedDate = e.target.value;
-    
+  const handleDateChange = (selectedDate) => {
     if (!selectedDate) {
       setSelectedSunday("");
       setStartDate("");
@@ -538,14 +538,11 @@ function WeeklyReportPopup({ isOpen, onClose }) {
             <div className="filter-group">
               <label>주간 선택</label>
               <input
-                type="date"
+                type="text"
                 value={selectedSunday}
-                onChange={handleDateChange}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
-                }}
+                placeholder="날짜 선"
+                readOnly
+                onClick={() => setIsDatePickerOpen(true)}
                 className="date-input-styled"
               />
             </div>
@@ -693,6 +690,14 @@ function WeeklyReportPopup({ isOpen, onClose }) {
           )}
         </div>
       </div>
+      <DatePickerPopup
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        currentDate={selectedSunday || new Date().toISOString().split("T")[0]}
+        onConfirm={(selectedDate) => {
+          handleDateChange(selectedDate);
+        }}
+      />
     </div>
   );
 }

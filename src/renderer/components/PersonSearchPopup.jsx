@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 import "./FinanceInputPopup.css";
 import { formatCurrency } from "../utils/formatCurrency";
+import DatePickerPopup from "./DatePickerPopup";
 
 function PersonSearchPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("개인 검색"); // "개인 검색" 또는 "인물 종합"
@@ -14,6 +15,8 @@ function PersonSearchPopup({ isOpen, onClose }) {
   const [sortColumn, setSortColumn] = useState(null); // "name" 또는 "total"
   const [sortDirection, setSortDirection] = useState("asc"); // "asc" 또는 "desc"
   const [loading, setLoading] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [datePickerFor, setDatePickerFor] = useState("start"); // "start" or "end"
 
   useEffect(() => {
     if (isOpen && activeTab === "인물 종합" && startDate && endDate) {
@@ -328,13 +331,12 @@ function PersonSearchPopup({ isOpen, onClose }) {
             <div className="filter-group">
               <label>시작 날짜</label>
               <input
-                type="date"
+                type="text"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
+                readOnly
+                onClick={() => {
+                  setDatePickerFor("start");
+                  setIsDatePickerOpen(true);
                 }}
                 className="date-input-styled"
               />
@@ -342,13 +344,12 @@ function PersonSearchPopup({ isOpen, onClose }) {
             <div className="filter-group">
               <label>종료 날짜</label>
               <input
-                type="date"
+                type="text"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
+                readOnly
+                onClick={() => {
+                  setDatePickerFor("end");
+                  setIsDatePickerOpen(true);
                 }}
                 className="date-input-styled"
               />
@@ -356,13 +357,12 @@ function PersonSearchPopup({ isOpen, onClose }) {
             {activeTab === "인물 종합" && (
               <div className="filter-group">
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={isDetailed}
-                    onChange={(e) => setIsDetailed(e.target.checked)}
-                    style={{ marginRight: "0.5rem" }}
-                  />
-                  상세
+                  <span 
+                    className="anonymous-toggle"
+                    onClick={() => setIsDetailed(!isDetailed)}
+                  >
+                    상세{isDetailed && " ✅"}
+                  </span>
                 </label>
               </div>
             )}
@@ -546,6 +546,18 @@ function PersonSearchPopup({ isOpen, onClose }) {
           )}
         </div>
       </div>
+      <DatePickerPopup
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        currentDate={datePickerFor === "start" ? startDate : endDate}
+        onConfirm={(selectedDate) => {
+          if (datePickerFor === "start") {
+            setStartDate(selectedDate);
+          } else {
+            setEndDate(selectedDate);
+          }
+        }}
+      />
     </div>
   );
 }

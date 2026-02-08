@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./FinanceInputPopup.css";
 import { formatCurrency } from "../utils/formatCurrency";
+import DatePickerPopup from "./DatePickerPopup";
 
 function FinanceInputPopup({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("수입"); // "수입" 또는 "지출"
@@ -27,6 +28,8 @@ function FinanceInputPopup({ isOpen, onClose }) {
   const [yearlyExpenseTotal, setYearlyExpenseTotal] = useState(0); // 총 지출금액
   const [previousDayIncomeTotal, setPreviousDayIncomeTotal] = useState(0); // 전일까지 수입 총액
   const [previousDayExpenseTotal, setPreviousDayExpenseTotal] = useState(0); // 전일까지 지출 총액
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [datePickerFor, setDatePickerFor] = useState("main"); // "main" or "edit"
   const name1InputRef = useRef(null);
 
   useEffect(() => {
@@ -488,14 +491,12 @@ function FinanceInputPopup({ isOpen, onClose }) {
               <label>날짜</label>
               <div className="date-input-wrapper">
                 <input
-                  type="date"
+                  type="text"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  onKeyDown={(e) => {
-                    // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
-                    if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                      e.preventDefault();
-                    }
+                  readOnly
+                  onClick={() => {
+                    setDatePickerFor("main");
+                    setIsDatePickerOpen(true);
                   }}
                   className="date-input-styled"
                   required
@@ -560,19 +561,18 @@ function FinanceInputPopup({ isOpen, onClose }) {
                 <div className="form-group-compact">
                   <label>
                     이름1 {!isAnonymous && <span className="required">*</span>}
-                    <input
-                      type="checkbox"
-                      checked={isAnonymous}
-                      onChange={(e) => {
-                        setIsAnonymous(e.target.checked);
-                        if (e.target.checked) {
+                    <span 
+                      className="anonymous-toggle"
+                      onClick={() => {
+                        setIsAnonymous(!isAnonymous);
+                        if (!isAnonymous) {
                           setName1("");
                           setName2("");
                         }
                       }}
-                      style={{ marginLeft: "0.5rem" }}
-                    />
-                    <span style={{ marginLeft: "0.25rem", fontWeight: "normal" }}>무명</span>
+                    >
+                      무명{isAnonymous && " ✅"}
+                    </span>
                   </label>
                   <input
                     ref={name1InputRef}
@@ -719,6 +719,14 @@ function FinanceInputPopup({ isOpen, onClose }) {
           />
         )}
       </div>
+      <DatePickerPopup
+        isOpen={isDatePickerOpen && datePickerFor === "main"}
+        onClose={() => setIsDatePickerOpen(false)}
+        currentDate={date}
+        onConfirm={(selectedDate) => {
+          setDate(selectedDate);
+        }}
+      />
     </div>
   );
 }
@@ -735,6 +743,7 @@ function FinanceEditPopup({ record, type, onClose }) {
   const [name2, setName2] = useState(type === "수입" ? (record.name2 || "") : "");
   const [amount, setAmount] = useState(record.amount.toString());
   const [memo, setMemo] = useState(record.memo || "");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     loadMainCategories();
@@ -841,15 +850,10 @@ function FinanceEditPopup({ record, type, onClose }) {
             <div className="form-group">
               <label>날짜</label>
               <input
-                type="date"
+                type="text"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                onKeyDown={(e) => {
-                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
-                }}
+                readOnly
+                onClick={() => setIsDatePickerOpen(true)}
                 className="date-input-styled"
                 required
               />
@@ -894,24 +898,22 @@ function FinanceEditPopup({ record, type, onClose }) {
 
           {type === "수입" && (
             <div className="form-row">
-              <div className="form-group checkbox-group">
+              <div className="form-group">
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={isAnonymous}
-                    onChange={(e) => {
-                      setIsAnonymous(e.target.checked);
-                      if (e.target.checked) {
+                  이름1 {!isAnonymous && <span className="required">*</span>}
+                  <span 
+                    className="anonymous-toggle"
+                    onClick={() => {
+                      setIsAnonymous(!isAnonymous);
+                      if (!isAnonymous) {
                         setName1("");
                         setName2("");
                       }
                     }}
-                  />
-                  무명
+                  >
+                    무명{isAnonymous && " ✅"}
+                  </span>
                 </label>
-              </div>
-              <div className="form-group">
-                <label>이름1 {!isAnonymous && <span className="required">*</span>}</label>
                 <input
                   type="text"
                   value={name1}
@@ -966,6 +968,14 @@ function FinanceEditPopup({ record, type, onClose }) {
           </div>
         </form>
       </div>
+      <DatePickerPopup
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        currentDate={date}
+        onConfirm={(selectedDate) => {
+          setDate(selectedDate);
+        }}
+      />
     </div>
   );
 }

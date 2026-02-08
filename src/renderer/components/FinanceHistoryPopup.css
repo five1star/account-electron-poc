@@ -167,7 +167,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 0.875rem;
-  width: 120px;
+  width: 500px;
   text-align: center;
 }
 
@@ -296,15 +296,37 @@
   width: 25%;
 }
 
+.date-input-wrapper {
+  position: relative;
+}
+
+.date-input-wrapper::after {
+  content: "📅";
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 1.2rem;
+  z-index: 1;
+}
+
 .date-input-styled {
   cursor: pointer;
   background: white;
   width: 100%;
+  padding: 0.4rem;
+  padding-right: 2.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   user-select: none;
   -webkit-user-select: none;
+  position: relative;
 }
 
 .date-input-styled::-webkit-calendar-picker-indicator {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./FinanceHistoryPopup.css";
 import "./FinanceInputPopup.css";
 import { formatCurrency } from "../utils/formatCurrency";
+import DatePickerPopup from "./DatePickerPopup";
 
 // 한글 폰트 추가를 위한 유틸리티
 // 실제로는 Noto Sans KR 폰트를 base64로 변환하여 추가해야 합니다.
@@ -14,6 +15,8 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
   const [records, setRecords] = useState([]);
   const [editingRecord, setEditingRecord] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [datePickerFor, setDatePickerFor] = useState("start"); // "start" or "end"
 
   useEffect(() => {
     if (isOpen) {
@@ -389,14 +392,12 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
             <div className="filter-group">
               <label>시작 날짜</label>
               <input
-                type="date"
+                type="text"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                onKeyDown={(e) => {
-                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
+                readOnly
+                onClick={() => {
+                  setDatePickerFor("start");
+                  setIsDatePickerOpen(true);
                 }}
                 className="date-input-styled"
               />
@@ -404,14 +405,12 @@ function FinanceHistoryPopup({ isOpen, onClose }) {
             <div className="filter-group">
               <label>종료 날짜</label>
               <input
-                type="date"
+                type="text"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                onKeyDown={(e) => {
-                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
+                readOnly
+                onClick={() => {
+                  setDatePickerFor("end");
+                  setIsDatePickerOpen(true);
                 }}
                 className="date-input-styled"
               />
@@ -628,6 +627,7 @@ function FinanceEditPopup({ record, type, onClose }) {
   const [selectedSubCategory, setSelectedSubCategory] = useState(record.sub_category);
   const [isAnonymous, setIsAnonymous] = useState(type === "수입" && record.name1 === "무명");
   const [name1, setName1] = useState(type === "수입" ? record.name1 : "");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [name2, setName2] = useState(type === "수입" ? (record.name2 || "") : "");
   const [amount, setAmount] = useState(record.amount.toString());
   const [memo, setMemo] = useState(record.memo || "");
@@ -729,15 +729,10 @@ function FinanceEditPopup({ record, type, onClose }) {
             <div className="form-group">
               <label>날짜</label>
               <input
-                type="date"
+                type="text"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                onKeyDown={(e) => {
-                  // 키보드 입력 차단 (화살표 키, Tab, Enter는 허용)
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
-                }}
+                readOnly
+                onClick={() => setIsDatePickerOpen(true)}
                 className="date-input-styled"
                 required
               />
@@ -854,6 +849,14 @@ function FinanceEditPopup({ record, type, onClose }) {
           </div>
         </form>
       </div>
+      <DatePickerPopup
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        currentDate={date}
+        onConfirm={(selectedDate) => {
+          setDate(selectedDate);
+        }}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import FinanceHistoryPopup from "./FinanceHistoryPopup";
 import WeeklyReportPopup from "./WeeklyReportPopup";
 import YearlyReportPopup from "./YearlyReportPopup";
 import PersonSearchPopup from "./PersonSearchPopup";
+import DatePickerPopup from "./DatePickerPopup";
 import { formatCurrency } from "../utils/formatCurrency";
 import "./FinanceHistoryPopup.css";
 import "./MainScreen.css";
@@ -167,6 +168,7 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [donationData, setDonationData] = useState(null);
   const [error, setError] = useState(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && selectedDate) {
@@ -340,14 +342,10 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
             <div className="filter-group">
               <label>날짜 선택</label>
               <input
-                type="date"
+                type="text"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Tab' && e.key !== 'Enter' && !e.key.startsWith('Arrow')) {
-                    e.preventDefault();
-                  }
-                }}
+                readOnly
+                onClick={() => setIsDatePickerOpen(true)}
                 className="weekly-donation-date-input"
               />
             </div>
@@ -368,6 +366,14 @@ function WeeklyDonationCopyPopup({ isOpen, onClose }) {
           ) : null}
         </div>
       </div>
+      <DatePickerPopup
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        currentDate={selectedDate}
+        onConfirm={(selectedDate) => {
+          setSelectedDate(selectedDate);
+        }}
+      />
     </div>
   );
 }

@@ -130,3 +130,15 @@ body {
   transform: translateY(0);
   box-shadow: 0 1px 4px rgba(76, 175, 80, 0.3);
 }
+
+/* 전역 체크박스 크기 - 폰트 스케일에 따라 유동적으로 변함 */
+input[type="checkbox"] {
+  width: calc(9px * var(--font-scale));
+  height: calc(9px * var(--font-scale));
+  min-width: calc(9px * var(--font-scale));
+  min-height: calc(9px * var(--font-scale));
+  max-width: calc(9px * var(--font-scale));
+  max-height: calc(9px * var(--font-scale));
+  cursor: pointer;
+  flex-shrink: 0;
+}
