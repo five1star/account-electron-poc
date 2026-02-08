@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, screen } = require("electron");
 const path = require("path");
 
 // macOS Writing Tools 관련 크래시 방지를 위한 command line arguments
@@ -65,10 +65,12 @@ let mainWindow;
 
 function createWindow() {
   const iconPath = path.join(__dirname, 'src', 'renderer', 'image', 'logo.jpg');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
   
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: width,
+    height: height,
     icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
@@ -81,8 +83,13 @@ function createWindow() {
     // macOS Writing Tools 비활성화
     ...(process.platform === 'darwin' && {
       titleBarStyle: 'default'
-    })
+    }),
+    show: false // 창을 먼저 숨기고 maximize 후 표시
   });
+  
+  // 창을 최대화하고 표시
+  mainWindow.maximize();
+  mainWindow.show();
   
   // macOS에서 Writing Tools 관련 기능 비활성화
   if (process.platform === 'darwin') {

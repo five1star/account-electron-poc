@@ -1,7 +1,15 @@
+:root {
+  --font-scale: 2;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html {
+  font-size: calc(28px * var(--font-scale));
 }
 
 body {
@@ -27,8 +35,10 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
+  gap: 1rem;
+  padding-bottom: 1rem;
 }
 
 .logo-top-section {
@@ -40,6 +50,7 @@ body {
   padding: 0;
   border-bottom: 2px solid #e0e0e0;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .main-logo-full {
@@ -49,26 +60,6 @@ body {
   display: block;
 }
 
-.button-container {
-  width: 50%;
-  max-width: 600px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.5rem;
-  justify-content: flex-start;
-  align-items: flex-start;
-  align-content: flex-start;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin: auto;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
 
 .version-section {
   position: absolute;
@@ -109,17 +100,24 @@ body {
 }
 
 .menu-button {
-  flex: 0 0 calc(50% - 0.5rem);
-  padding: 0.75rem 1.25rem;
-  font-size: 0.95rem;
-  font-weight: 500;
+  width: calc(100% - 2rem);
+  margin: 0 1rem;
+  padding: 2.5rem 1.5rem;
+  font-size: 2rem;
+  font-weight: 600;
   color: white;
   background: #4caf50;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+  min-height: 80px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .menu-button:hover {

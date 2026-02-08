@@ -77,50 +77,48 @@ function MainScreen() {
       <div className="logo-top-section">
         <img src={longLogo} alt="로고" className="main-logo-full" />
       </div>
-      <div className="button-container">
-        <button
-          className="menu-button"
-          onClick={() => handleButtonClick("재정 입력")}
-        >
-          재정 입력
-        </button>
-        <button
-          className="menu-button"
-          onClick={() => handleButtonClick("입력 목록")}
-        >
-          입력 목록
-        </button>
-        <button
-          className="menu-button"
-          onClick={() => handleButtonClick("주간 보고서")}
-        >
-          주간 보고서
-        </button>
-        <button
-          className="menu-button"
-          onClick={() => handleButtonClick("연간 보고서")}
-        >
-          연간 보고서
-        </button>
-        <button
-          className="menu-button"
-          onClick={() => handleButtonClick("인물 검색")}
-        >
-          인물 검색
-        </button>
-        <button
-          className="menu-button"
-          onClick={() => handleButtonClick("항목 관리")}
-        >
-          항목 관리
-        </button>
-        <button
-          className="menu-button"
-          onClick={handleCopyWeeklyDonationList}
-        >
-          헌금 명단 조회
-        </button>
-      </div>
+      <button
+        className="menu-button"
+        onClick={() => handleButtonClick("재정 입력")}
+      >
+        재정 입력
+      </button>
+      <button
+        className="menu-button"
+        onClick={() => handleButtonClick("입력 목록")}
+      >
+        입력 목록
+      </button>
+      <button
+        className="menu-button"
+        onClick={() => handleButtonClick("주간 보고서")}
+      >
+        주간 보고서
+      </button>
+      <button
+        className="menu-button"
+        onClick={() => handleButtonClick("연간 보고서")}
+      >
+        연간 보고서
+      </button>
+      <button
+        className="menu-button"
+        onClick={() => handleButtonClick("인물 검색")}
+      >
+        인물 검색
+      </button>
+      <button
+        className="menu-button"
+        onClick={() => handleButtonClick("항목 관리")}
+      >
+        항목 관리
+      </button>
+      <button
+        className="menu-button"
+        onClick={handleCopyWeeklyDonationList}
+      >
+        헌금 명단 조회
+      </button>
 
       <CategoryManagementPopup
         isOpen={isCategoryPopupOpen}
